@@ -6,13 +6,13 @@
 $ touch line.env
 
 # チャネルID
-$ echo "LINE_CHANNEL_ID=hoge" >> line.env
+$ echo "LINE_CHANNEL_ID=hoge" >> ./go-app/line.env
 
 # チャネルシークレット
-$ echo "LINE_CHANNEL_SECRET=fuga" >> line.env
+$ echo "LINE_CHANNEL_SECRET=fuga" >> ./go-app/line.env
 
 # チャネルアクセストークン
-$ echo "LINE_CHANNEL_TOKEN=hogefuga" >> line.env
+$ echo "LINE_CHANNEL_TOKEN=hogefuga" >> ./go-app/line.env
 ```
 
 ## Run and Debug
