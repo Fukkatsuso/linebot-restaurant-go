@@ -13,4 +13,5 @@ services:
       - PORT=8080
     env_file: 
       - ./go-app/line.env
+      - ./go-app/gcp.env
     command: "go run go-app/main.go"
