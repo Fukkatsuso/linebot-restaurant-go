@@ -2,23 +2,30 @@
 
 ## Setup
 ### Env
-```
-$ touch line.env
+```sh
+$ touch ./go-app/line.env
 
-# チャネルID
+# LINE チャネルID
 $ echo "LINE_CHANNEL_ID=hoge" >> ./go-app/line.env
 
-# チャネルシークレット
+# LINE チャネルシークレット
 $ echo "LINE_CHANNEL_SECRET=fuga" >> ./go-app/line.env
 
-# チャネルアクセストークン
+# LINE チャネルアクセストークン
 $ echo "LINE_CHANNEL_TOKEN=hogefuga" >> ./go-app/line.env
+
+$ touch ./go-app/gcp.env
+
+# GCP Places API キー
+$ echo "GCP_PLACES_API_KEY=AAAAA" >> ./go-app/gcp.env
 ```
 
+
 ## Run and Debug
-```
+```sh
 $ docker-compose up
 (another tab) $ ngrok http 8080
 ```
+
 
 ## Deploy
