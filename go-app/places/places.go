@@ -6,52 +6,14 @@ import (
 	"net/http"
 )
 
+// Places is slice of place
+type Places []Place
+
 // APIResponse is format of places-API's response
 type APIResponse struct {
 	HTMLAttributions []interface{} `json:"html_attributions"`
-	Results          []struct {
-		Geometry struct {
-			Location struct {
-				Lat float64 `json:"lat"`
-				Lng float64 `json:"lng"`
-			} `json:"location"`
-			Viewport struct {
-				Northeast struct {
-					Lat float64 `json:"lat"`
-					Lng float64 `json:"lng"`
-				} `json:"northeast"`
-				Southwest struct {
-					Lat float64 `json:"lat"`
-					Lng float64 `json:"lng"`
-				} `json:"southwest"`
-			} `json:"viewport"`
-		} `json:"geometry"`
-		Icon         string `json:"icon"`
-		ID           string `json:"id"`
-		Name         string `json:"name"`
-		OpeningHours struct {
-			OpenNow bool `json:"open_now"`
-		} `json:"opening_hours,omitempty"`
-		PlaceID  string `json:"place_id"`
-		PlusCode struct {
-			CompoundCode string `json:"compound_code"`
-			GlobalCode   string `json:"global_code"`
-		} `json:"plus_code"`
-		Rating           int      `json:"rating"`
-		Reference        string   `json:"reference"`
-		Scope            string   `json:"scope"`
-		Types            []string `json:"types"`
-		UserRatingsTotal int      `json:"user_ratings_total"`
-		Vicinity         string   `json:"vicinity"`
-		Photos           []struct {
-			Height           int      `json:"height"`
-			HTMLAttributions []string `json:"html_attributions"`
-			PhotoReference   string   `json:"photo_reference"`
-			Width            int      `json:"width"`
-		} `json:"photos,omitempty"`
-		PriceLevel int `json:"price_level,omitempty"`
-	} `json:"results"`
-	Status string `json:"status"`
+	Places           Places        `json:"results"`
+	Status           string        `json:"status"`
 }
 
 // BuildURI returns uri with parameters
@@ -67,7 +29,7 @@ func BuildURI(apiType string, params map[string]string) string {
 }
 
 // Search gets places and returns them by struct format
-func Search(uri string) (*APIResponse, error) {
+func Search(uri string) (Places, error) {
 	resp, err := http.Get(uri)
 	if err != nil {
 		return nil, err
@@ -78,8 +40,8 @@ func Search(uri string) (*APIResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	var places APIResponse
-	json.Unmarshal(body, &places)
+	var apiResp APIResponse
+	json.Unmarshal(body, &apiResp)
 
-	return &places, nil
+	return apiResp.Places, nil
 }

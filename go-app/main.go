@@ -24,6 +24,7 @@ func main() {
 	}
 
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
+		placesAPIKey := os.Getenv("GCP_PLACES_API_KEY")
 		events, err := bot.ParseRequest(req)
 		if err != nil {
 			if err == linebot.ErrInvalidSignature {
@@ -34,44 +35,38 @@ func main() {
 			return
 		}
 		for _, event := range events {
+			var reply linebot.SendingMessage
 			if event.Type == linebot.EventTypeMessage {
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
-					var reply linebot.SendingMessage
 					switch message.Text {
 					case "位置情報検索":
-						locationURIAction := linebot.NewURIAction("送信する", "line://nv/location")
-						locationButton := linebot.NewButtonsTemplate("", "", "位置情報を送信してネ", locationURIAction)
-						reply = linebot.NewTemplateMessage("位置情報送信ボタン", locationButton)
+						reply = places.LocationSendButton()
 					default:
 						reply = linebot.NewTextMessage(message.Text)
 					}
-					if _, err = bot.ReplyMessage(event.ReplyToken, reply).Do(); err != nil {
-						log.Print(err)
-					}
 				case *linebot.LocationMessage:
+					// URI組み立て
 					params := map[string]string{
 						"language": "ja",
 						"type":     "restaurant",
-						"key":      os.Getenv("GCP_PLACES_API_KEY"),
+						"key":      placesAPIKey,
 						"location": float64ToString(message.Latitude) + "," + float64ToString(message.Longitude),
 						"radius":   "500",
 					}
 					uri := places.BuildURI("nearbysearch", params)
 					fmt.Println("[URI]", uri)
-					result, err := places.Search(uri)
+					// Places検索実行
+					nearbyPlaces, err := places.Search(uri)
 					if err != nil {
-						fmt.Println(err)
+						log.Print(err)
 						continue
 					}
-					var rests string
-					for i := range result.Results {
-						rests += result.Results[i].Name + "\n"
-					}
-					reply := linebot.NewTextMessage(rests)
-					if _, err = bot.ReplyMessage(event.ReplyToken, reply).Do(); err != nil {
-						log.Print(err)
-					}
+					// 返信の形式に整える
+					reply = nearbyPlaces.MarshalMessage(10)
+				}
+				if _, err := bot.ReplyMessage(event.ReplyToken, reply).Do(); err != nil {
+					log.Print(err)
 				}
 			}
 		}
