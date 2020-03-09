@@ -23,7 +23,8 @@ $ echo "GCP_PLACES_API_KEY=AAAAA" >> ./go-app/gcp.env
 
 ## Run and Debug
 ```sh
-$ docker-compose up
+$ cd go-app/
+/go-app $ docker-compose up
 (another tab) $ ngrok http 8080
 ```
 
