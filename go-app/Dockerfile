@@ -8,6 +8,8 @@ RUN curl -Lso go.tar.gz "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.ta
 
 ENV PATH /usr/local/go/bin:$PATH
 
-WORKDIR /go/src/linebot-restaurant-go
+ENV GOPATH /go
+
+WORKDIR /go/src/linebot-restaurant-go/go-app
 
 RUN go get github.com/line/line-bot-sdk-go/linebot

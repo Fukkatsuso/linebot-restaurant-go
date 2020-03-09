@@ -9,7 +9,7 @@ import (
 
 	"github.com/line/line-bot-sdk-go/linebot"
 
-	"./places"
+	"linebot-restaurant-go/go-app/places"
 )
 
 func main() {

@@ -30,6 +30,7 @@ $ cd go-app/
 
 
 ## Deploy
+### Make 'secret.yaml'
 ```sh
 $ cat go-app/secret.yaml
 env_variables:
@@ -37,4 +38,30 @@ env_variables:
   LINE_CHANNEL_SECRET: "fuga"
   LINE_CHANNEL_TOKEN: "hogefuga"
   GCP_PLACES_API_KEY: "AAAAA"
+```
+
+### Login gcloud and Deploy
+```sh
+# login gcloud
+/go-app $ docker-compose up
+(another tab) /go-app $ docker container exec -it linebot-restaurant-go bash
+(inside the container) $ gcloud auth login
+
+
+# gcloud app information
+(inside the container) $ gcloud app describe
+
+
+# deploy first time
+(inside the container) $ gcloud init
+(inside the container) $ gcloud app create --project=*your project ID*
+...
+Please enter your numeric choice:  3 (asia-northeast2)
+...
+(inside the container) $ gcloud app deploy
+
+
+# deploy after the first time
+(inside the container) $ gcloud config set project *your project ID*
+(inside the container) $ gcloud app deploy
 ```

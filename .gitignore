@@ -1,3 +1,4 @@
 REFERENCES.md
 *.env
 /go-app/secret.yaml
+/go-app/.gcloudignore
