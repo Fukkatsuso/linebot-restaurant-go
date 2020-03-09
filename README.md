@@ -30,3 +30,11 @@ $ cd go-app/
 
 
 ## Deploy
+```sh
+$ cat go-app/secret.yaml
+env_variables:
+  LINE_CHANNEL_ID: "hoge"
+  LINE_CHANNEL_SECRET: "fuga"
+  LINE_CHANNEL_TOKEN: "hogefuga"
+  GCP_PLACES_API_KEY: "AAAAA"
+```
