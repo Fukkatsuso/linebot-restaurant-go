@@ -6,8 +6,12 @@ schema:
 - name: go-app
   path: .
   commands:
+    install:
+      status: true
+      method: go build -o server
     run:
       status: true
+      method: ./server
   watcher:
     extensions:
     - go
