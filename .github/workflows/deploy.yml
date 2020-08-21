@@ -32,3 +32,4 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
           version: 1.0
+          deliverables: go-app/app.yaml
