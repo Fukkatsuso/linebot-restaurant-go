@@ -1,4 +1,9 @@
-runtime: go111
+runtime: go114
+
+instance_class: F1
+automatic_scaling:
+  max_instances: 2
+  max_idle_instances: 1
 
 includes:
 - secret.yaml
