@@ -1,15 +1,16 @@
-FROM google/cloud-sdk:latest
+# base
+FROM golang:1.14.4-alpine3.12 AS base
 
-ENV GO_VERSION 1.11
+RUN apk --no-cache add \
+        git 
 
-RUN curl -Lso go.tar.gz "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz" \
-    && tar -C /usr/local -xzf go.tar.gz \
-    && rm go.tar.gz
+WORKDIR $GOPATH/src/github.com/Fukkatsuso/linebot-restaurant-go/go-app
 
-ENV PATH /usr/local/go/bin:$PATH
+RUN go get -u -v \
+        github.com/line/line-bot-sdk-go/linebot
 
-ENV GOPATH /go
+# dev
+FROM base AS dev
 
-WORKDIR /go/src/linebot-restaurant-go/go-app
-
-RUN go get github.com/line/line-bot-sdk-go/linebot
+RUN go get -v \
+        github.com/oxequa/realize
