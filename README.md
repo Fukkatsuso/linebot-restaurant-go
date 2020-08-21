@@ -28,40 +28,70 @@ $ cd go-app/
 (another tab) $ ngrok http 8080
 ```
 
-
-## Deploy
-### Make 'secret.yaml'
+## Deploy to GAE
+### Cloud Shell上での準備
+1. プロジェクト, GAEアプリの作成
 ```sh
-$ cat go-app/secret.yaml
-env_variables:
-  LINE_CHANNEL_ID: "hoge"
-  LINE_CHANNEL_SECRET: "fuga"
-  LINE_CHANNEL_TOKEN: "hogefuga"
-  GCP_PLACES_API_KEY: "AAAAA"
+export PROJECT_ID=blog-XXXXXX
+gcloud projects create --name ${PROJECT_ID}
+gcloud config set project ${PROJECT_ID}
+gcloud app create
 ```
 
-### Login gcloud and Deploy
+2. APIを有効化(Cloud Buildのために課金を有効にする)
 ```sh
-# login gcloud
-/go-app $ docker-compose up
-(another tab) /go-app $ docker container exec -it linebot-restaurant-go bash
-(inside the container) $ gcloud auth login
+gcloud services enable appengine.googleapis.com
 
-
-# gcloud app information
-(inside the container) $ gcloud app describe
-
-
-# deploy first time
-(inside the container) $ gcloud init
-(inside the container) $ gcloud app create --project=*your project ID*
-...
-Please enter your numeric choice:  3 (asia-northeast2)
-...
-(inside the container) $ gcloud app deploy
-
-
-# deploy after the first time
-(inside the container) $ gcloud config set project *your project ID*
-(inside the container) $ gcloud app deploy
+gcloud alpha billing accounts list
+gcloud alpha billing projects link ${PROJECT_ID} --billing-account YYYYYY-ZZZZZZ-AAAAAA
+gcloud services enable cloudbilling.googleapis.com
+gcloud services enable cloudbuild.googleapis.com
 ```
+
+3. サービスアカウント, サービスアカウントキーの作成
+```sh
+export SA_NAME=githubactions
+gcloud iam service-accounts create ${SA_NAME} \
+  --description="used by GitHub Actions" \
+  --display-name="${SA_NAME}"
+gcloud iam service-accounts list
+
+export IAM_ACCOUNT=${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com
+
+gcloud iam service-accounts keys create ~/${PROJECT_ID}/${SA_NAME}/key.json \
+  --iam-account ${IAM_ACCOUNT}
+```
+
+4. role付与
+```sh
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role='roles/compute.storageAdmin'
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role='roles/cloudbuild.builds.editor'
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role='roles/appengine.deployer'
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role='roles/appengine.appAdmin'
+gcloud projects add-iam-policy-binding ${PROJECT_ID} \
+  --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role='roles/cloudbuild.builds.builder'
+```
+
+### GitHub Secret
+- LINE_CHANNEL_ID
+- LINE_CHANNEL_SECRET
+- LINE_CHANNEL_TOKEN
+- GCP_PLACES_API_KEY
+- GCP_PROJECT: プロジェクトID
+- GCP_SA_KEY: サービスアカウントのJSON鍵をBase64エンコード
+  ```sh
+  # Cloud Shell
+  openssl base64 -in ~/${PROJECT_ID}/${SA_NAME}/key.json
+  ```
+
+### GitHubへPush
+masterブランチへ
