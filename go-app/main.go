@@ -10,7 +10,7 @@ import (
 
 	"github.com/line/line-bot-sdk-go/linebot"
 
-	"linebot-restaurant-go/go-app/places"
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 )
 
 // Query is data of user's request
