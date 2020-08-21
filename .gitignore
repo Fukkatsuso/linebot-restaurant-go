@@ -2,3 +2,5 @@ REFERENCES.md
 *.env
 /go-app/secret.yaml
 /go-app/.gcloudignore
+/go-app/server
+/go-app/go.sum
