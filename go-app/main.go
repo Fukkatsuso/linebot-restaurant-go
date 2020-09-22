@@ -13,6 +13,18 @@ import (
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 )
 
+var (
+	radiusKey   = []string{"100m", "250m", "500m", "1km", "2km", "5km"}
+	radiusValue = []int{100, 250, 500, 1000, 2000, 5000}
+	radiusMap   = map[int]string{}
+)
+
+func init() {
+	for i, val := range radiusKey {
+		radiusMap[radiusValue[i]] = val
+	}
+}
+
 // Query is data of user's request
 type Query struct {
 	Lat     float64 `json:"lat"`
@@ -37,6 +49,15 @@ func (q *Query) BuildURI(apiType, apiKey string) string {
 	})
 }
 
+func (q *Query) Status() string {
+	var str string
+	str += fmt.Sprintf("距離: %s\n", radiusMap[q.Radius])
+	if q.Keyword != nil {
+		str += fmt.Sprintf("キーワード: %s\n", *q.Keyword)
+	}
+	return str
+}
+
 func (q *Query) SearchConfirmButton() *linebot.TemplateMessage {
 	jsonBytes, _ := json.Marshal(q)
 	actions := []linebot.TemplateAction{
@@ -44,13 +65,11 @@ func (q *Query) SearchConfirmButton() *linebot.TemplateMessage {
 		linebot.NewPostbackAction("キーワードで絞り込み", `{"action": "narrowDownKeyword", "query": `+string(jsonBytes)+`}`, "", ""),
 		linebot.NewPostbackAction("検索する", `{"action": "search", "query": `+string(jsonBytes)+`}`, "", ""),
 	}
-	buttons := linebot.NewButtonsTemplate("", "確認", "絞り込みますか？", actions...)
+	buttons := linebot.NewButtonsTemplate("", "絞り込みますか？", q.Status(), actions...)
 	return linebot.NewTemplateMessage("確認ボタン", buttons)
 }
 
 func (q *Query) RadiusQuickReply() linebot.SendingMessage {
-	radiusKey := []string{"100m", "250m", "500m", "1km", "2km", "5km"}
-	radiusValue := []int{100, 250, 500, 1000, 2000, 5000}
 	buttons := make([]*linebot.QuickReplyButton, 0)
 	for i := range radiusKey {
 		q.Radius = radiusValue[i]
