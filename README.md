@@ -1,4 +1,5 @@
 # Restaurant Search App By Golang
+[![Deploy](https://github.com/Fukkatsuso/linebot-restaurant-go/workflows/Deploy/badge.svg)](https://github.com/Fukkatsuso/linebot-restaurant-go/actions/runs/267380868)
 
 ## Setup
 ### Env
@@ -64,20 +65,15 @@ gcloud iam service-accounts keys create ~/${PROJECT_ID}/${SA_NAME}/key.json \
 
 4. role付与
 ```sh
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-  --member="serviceAccount:${IAM_ACCOUNT}" \
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
   --role='roles/compute.storageAdmin'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-  --member="serviceAccount:${IAM_ACCOUNT}" \
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
   --role='roles/cloudbuild.builds.editor'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-  --member="serviceAccount:${IAM_ACCOUNT}" \
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
   --role='roles/appengine.deployer'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-  --member="serviceAccount:${IAM_ACCOUNT}" \
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
   --role='roles/appengine.appAdmin'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-  --member="serviceAccount:${IAM_ACCOUNT}" \
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
   --role='roles/cloudbuild.builds.builder'
 ```
 
