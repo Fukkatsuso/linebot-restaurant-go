@@ -23,7 +23,7 @@ FROM base AS builder
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -o /go/bin/server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /go/bin/server
 
 # release
 FROM alpine:latest AS release
