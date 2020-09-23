@@ -17,3 +17,21 @@ RUN go get \
         github.com/pilu/fresh
 
 CMD [ "fresh" ]
+
+# builder
+FROM base AS builder
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -o /go/bin/server
+
+# release
+FROM alpine:latest AS release
+
+RUN apk --no-cache add ca-certificates
+
+WORKDIR /app
+
+COPY --from=builder /go/bin/server .
+
+CMD [ "./server" ]
