@@ -9,20 +9,20 @@ on:
       - '!README.md'
       - '!.gitignore'
 
+env:
+  GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  IMAGE: asia.gcr.io/${{ secrets.GCP_PROJECT }}/restaurant-search:${{ github.sha }}
+
 jobs:
   deploy:
     runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: go-app
 
     steps:
       - uses: actions/checkout@v1
-
-      - name: Set secrets
-        run: |
-          echo 'env_variables:' >> go-app/secret.yaml
-          echo '  LINE_CHANNEL_ID: "${{ secrets.LINE_CHANNEL_ID }}"' >> go-app/secret.yaml
-          echo '  LINE_CHANNEL_SECRET: "${{ secrets.LINE_CHANNEL_SECRET }}"' >> go-app/secret.yaml
-          echo '  LINE_CHANNEL_TOKEN: "${{ secrets.LINE_CHANNEL_TOKEN }}"' >> go-app/secret.yaml
-          echo '  GCP_PLACES_API_KEY: "${{ secrets.GCP_PLACES_API_KEY }}"' >> go-app/secret.yaml
       
       - name: GCP Authenticate
         uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
@@ -30,10 +30,25 @@ jobs:
           project_id: ${{ secrets.GCP_PROJECT }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
+      
+      - name: Configure docker to use the gcloud cli
+        run: gcloud auth configure-docker --quiet
 
-      - name: Deploy to GAE
-        uses: GoogleCloudPlatform/github-actions/appengine-deploy@master
-        with:
-          project_id: ${{ secrets.GCP_PROJECT }}
-          version: 1.0
-          deliverables: go-app/app.yaml
+      - name: Build a docker image
+        run: docker build -f Dockerfile --target release -t $IMAGE .
+
+      - name: Push the docker image
+        run: docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy restaurant-search \
+            --image $IMAGE \
+            --project $GCP_PROJECT \
+            --region $GCP_REGION \
+            --platform managed \
+            --set-env-vars "LINE_CHANNEL_ID=${{ secrets.LINE_CHANNEL_ID }}" \
+            --set-env-vars "LINE_CHANNEL_SECRET=${{ secrets.LINE_CHANNEL_SECRET }}" \
+            --set-env-vars "LINE_CHANNEL_TOKEN=${{ secrets.LINE_CHANNEL_TOKEN }}" \
+            --set-env-vars "GCP_PLACES_API_KEY=${{ secrets.GCP_PLACES_API_KEY }}" \
+            --quiet
