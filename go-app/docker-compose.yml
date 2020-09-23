@@ -17,4 +17,3 @@ services:
     env_file: 
       - ./line.env
       - ./gcp.env
-    command: "realize start --run"
