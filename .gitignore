@@ -4,3 +4,4 @@ REFERENCES.md
 /go-app/.gcloudignore
 /go-app/server
 /go-app/go.sum
+/go-app/tmp/
