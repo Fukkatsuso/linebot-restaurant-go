@@ -29,19 +29,20 @@ $ cd go-app/
 (another tab) $ ngrok http 8080
 ```
 
-## Deploy to GAE
+## Deploy to Cloud Run
 ### Cloud Shell上での準備
-1. プロジェクト, GAEアプリの作成
+1. プロジェクトの作成
 ```sh
-export PROJECT_ID=blog-XXXXXX
+export PROJECT_ID=restaurant-search-XXXXXX
+export REGION=asia-northeast1
 gcloud projects create --name ${PROJECT_ID}
 gcloud config set project ${PROJECT_ID}
-gcloud app create
+gcloud config set run/region ${REGION}
 ```
 
-2. APIを有効化(Cloud Buildのために課金を有効にする)
+2. APIを有効化(課金も有効にする)
 ```sh
-gcloud services enable appengine.googleapis.com
+gcloud services enable run.googleapis.com
 
 gcloud alpha billing accounts list
 gcloud alpha billing projects link ${PROJECT_ID} --billing-account YYYYYY-ZZZZZZ-AAAAAA
@@ -63,18 +64,14 @@ gcloud iam service-accounts keys create ~/${PROJECT_ID}/${SA_NAME}/key.json \
   --iam-account ${IAM_ACCOUNT}
 ```
 
-4. role付与
+4. role付与 - [参考](https://cloud.google.com/run/docs/reference/iam/roles?hl=ja#additional-configuration)
 ```sh
 gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
-  --role='roles/compute.storageAdmin'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
-  --role='roles/cloudbuild.builds.editor'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
-  --role='roles/appengine.deployer'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
-  --role='roles/appengine.appAdmin'
-gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
-  --role='roles/cloudbuild.builds.builder'
+  --role="roles/run.admin"
+
+export PROJECT_NUMBER=XXXXXXXXXXXX
+gcloud iam service-accounts add-iam-policy-binding ${PROJECT_NUMBER}-compute@developer.gserviceaccount.com --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role="roles/iam.serviceAccountUser"
 ```
 
 ### GitHub Secret
@@ -83,6 +80,7 @@ gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${
 - LINE_CHANNEL_TOKEN
 - GCP_PLACES_API_KEY
 - GCP_PROJECT: プロジェクトID
+- GCP_REGION: Cloud Runのリージョン
 - GCP_SA_KEY: サービスアカウントのJSON鍵をBase64エンコード
   ```sh
   # Cloud Shell
