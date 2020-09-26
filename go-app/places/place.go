@@ -33,7 +33,7 @@ type Place struct {
 		CompoundCode string `json:"compound_code"`
 		GlobalCode   string `json:"global_code"`
 	} `json:"plus_code"`
-	Rating           int      `json:"rating"`
+	Rating           float64  `json:"rating"`
 	Reference        string   `json:"reference"`
 	Scope            string   `json:"scope"`
 	Types            []string `json:"types"`
