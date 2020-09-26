@@ -1,6 +1,7 @@
 package places
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -54,9 +55,15 @@ func (place *Place) MarshalBubble() linebot.BubbleContainer {
 				&linebot.TextComponent{
 					Type:   linebot.FlexComponentTypeText,
 					Text:   place.Name,
-					Size:   linebot.FlexTextSizeTypeMd,
+					Size:   linebot.FlexTextSizeTypeLg,
 					Weight: linebot.FlexTextWeightTypeBold,
 					Wrap:   true,
+				},
+				&linebot.BoxComponent{
+					Type:     linebot.FlexComponentTypeBox,
+					Layout:   linebot.FlexBoxLayoutTypeBaseline,
+					Contents: RatingStars(place.Rating),
+					Margin:   linebot.FlexComponentMarginTypeMd,
 				},
 			},
 		},
@@ -71,4 +78,36 @@ func (place *Place) MarshalBubble() linebot.BubbleContainer {
 			},
 		},
 	}
+}
+
+// RatingStars returns star view
+func RatingStars(rating float64) []linebot.FlexComponent {
+	maxRating := 5
+	stars := make([]linebot.FlexComponent, maxRating)
+	for i := 0; i < maxRating; i++ {
+		star := linebot.IconComponent{
+			Type: linebot.FlexComponentTypeIcon,
+			URL:  StarIconURI(i < int(rating)),
+			Size: linebot.FlexIconSizeTypeMd,
+		}
+		stars[i] = &star
+	}
+	stars = append(stars, &linebot.TextComponent{
+		Type:   linebot.FlexComponentTypeText,
+		Text:   fmt.Sprintf("%1.1f", rating),
+		Margin: linebot.FlexComponentMarginTypeMd,
+		Size:   linebot.FlexTextSizeTypeMd,
+		Weight: linebot.FlexTextWeightTypeRegular,
+		Color:  "#999999",
+	})
+	return stars
+}
+
+// StarIconURI returns uri of star icon
+func StarIconURI(gold bool) string {
+	base := "https://scdn.line-apps.com/n/channel_devcenter/img/fx/"
+	if gold {
+		return base + "review_gold_star_28.png"
+	}
+	return base + "review_gray_star_28.png"
 }
