@@ -19,6 +19,12 @@ $ touch ./go-app/gcp.env
 
 # GCP Places API キー
 $ echo "GCP_PLACES_API_KEY=AAAAA" >> ./go-app/gcp.env
+
+$ echo "DATASTORE_PROJECT_ID=restaurant-search-XXXXXX" >> ./go-app/gcp.env
+
+$ touch ./datastore/secret.env
+
+$ echo "DATASTORE_PROJECT_ID=restaurant-search-XXXXXX" >> ./datastore/secret.env
 ```
 
 
