@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/datastore"
@@ -89,13 +90,17 @@ func Delete(entity Entity, ctx context.Context, client *datastore.Client, name s
 }
 
 func (q *Query) BuildURI(apiType, apiKey string) string {
-	return places.BuildURI(apiType, map[string]string{
+	params := map[string]string{
 		"language": "ja",
 		"key":      apiKey,
 		"type":     "restaurant",
 		"location": float64ToString(q.Lat) + "," + float64ToString(q.Lng),
 		"radius":   strconv.Itoa(q.Radius),
-	})
+	}
+	if len(q.Keywords) > 0 {
+		params["keyword"] = strings.Join(q.Keywords, "+")
+	}
+	return places.BuildURI(apiType, params)
 }
 
 func (q *Query) Status() string {
@@ -109,9 +114,15 @@ func (q *Query) Status() string {
 
 func (q *Query) SearchConfirmButton() *linebot.TemplateMessage {
 	jsonBytes, _ := json.Marshal(q)
+	label := map[string]string{}
+	if len(q.Keywords) == 0 {
+		label["narrowDownKeyword"] = "キーワードで絞り込み"
+	} else {
+		label["narrowDownKeyword"] = "キーワードを設定し直す"
+	}
 	actions := []linebot.TemplateAction{
 		linebot.NewPostbackAction("距離で絞り込み", `{"action": "narrowDownRadius", "query": `+string(jsonBytes)+`}`, "", ""),
-		linebot.NewPostbackAction("キーワードで絞り込み", `{"action": "narrowDownKeyword", "query": `+string(jsonBytes)+`}`, "", ""),
+		linebot.NewPostbackAction(label["narrowDownKeyword"], `{"action": "narrowDownKeyword", "query": `+string(jsonBytes)+`}`, "", ""),
 		linebot.NewPostbackAction("検索する", `{"action": "search", "query": `+string(jsonBytes)+`}`, "", ""),
 	}
 	buttons := linebot.NewButtonsTemplate("", "絞り込みますか？", q.Status(), actions...)
@@ -178,15 +189,11 @@ func main() {
 						if err := Get(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
 							continue
 						}
-						// if query does not exists
-						//
-						//
 						query.Keywords = append(query.Keywords, message.Text)
 						if err := Save(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
 							continue
 						}
 						reply = query.SearchConfirmButton()
-						// linebot.NewTextMessage(message.Text)
 					}
 				case *linebot.LocationMessage:
 					query := Query{
@@ -197,9 +204,6 @@ func main() {
 						Page:     0,
 					}
 					reply = query.SearchConfirmButton()
-				}
-				if _, err := bot.ReplyMessage(event.ReplyToken, reply).Do(); err != nil {
-					log.Print(err)
 				}
 			} else if event.Type == linebot.EventTypePostback {
 				postbackData := new(PostbackData)
@@ -220,7 +224,7 @@ func main() {
 					if err := Save(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
 						continue
 					}
-					reply = linebot.NewTextMessage("キーワードを入力してネ")
+					reply = linebot.NewTextMessage("キーワードを入力してネ\n送ったメッセージの数だけキーワードが追加されます!")
 				case "setRadius":
 					reply = postbackData.Query.SearchConfirmButton()
 				case "search":
@@ -235,11 +239,15 @@ func main() {
 						log.Print(err)
 						continue
 					}
-					reply = nearbyPlaces.MarshalMessage(10)
+					if len(nearbyPlaces) == 0 {
+						reply = linebot.NewTextMessage("見つかりませんでした(´・ω・`)")
+					} else {
+						reply = nearbyPlaces.MarshalMessage(10)
+					}
 				}
-				if _, err := bot.ReplyMessage(event.ReplyToken, reply).Do(); err != nil {
-					log.Print(err)
-				}
+			}
+			if _, err := bot.ReplyMessage(event.ReplyToken, reply).Do(); err != nil {
+				log.Print(err)
 			}
 		}
 	})
