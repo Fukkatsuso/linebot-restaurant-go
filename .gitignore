@@ -1,3 +1,4 @@
+.DS_Store
 REFERENCES.md
 *.env
 /go-app/secret.yaml
@@ -5,3 +6,4 @@ REFERENCES.md
 /go-app/server
 /go-app/go.sum
 /go-app/tmp/
+/datastore/.data/

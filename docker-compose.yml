@@ -1,0 +1,38 @@
+version: "3.7"
+
+services:
+  app:
+    build: 
+      context: ./go-app
+      dockerfile: Dockerfile
+      target: dev
+    depends_on:
+      - datastore
+    container_name: linebot-restaurant-go
+    tty: true
+    volumes:
+      - ./go-app/:/go/src/github.com/Fukkatsuso/linebot-restaurant-go/go-app
+    ports: 
+      - 8080:8080
+    environment: 
+      - PORT=8080
+      - DATASTORE_EMULATOR_HOST=datastore:8081
+    env_file: 
+      - ./go-app/line.env
+      - ./go-app/gcp.env
+  
+  datastore:
+    build:
+      context: ./datastore
+      dockerfile: Dockerfile
+    container_name: linebot-datastore
+    tty: true
+    volumes:
+      - ./datastore:/datastore
+    ports: 
+      - 8081:8081
+    environment: 
+      - DATASTORE_LISTEN_ADDRESS=0.0.0.0:8081
+    env_file: 
+      - ./datastore/secret.env
+    command: bash ./entrypoint.sh
