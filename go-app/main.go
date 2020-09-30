@@ -1,13 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
+	"cloud.google.com/go/datastore"
 	"github.com/line/line-bot-sdk-go/linebot"
 
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
@@ -27,16 +30,62 @@ func init() {
 
 // Query is data of user's request
 type Query struct {
-	Lat     float64 `json:"lat"`
-	Lng     float64 `json:"lng"`
-	Keyword *string `json:"keyword"`
-	Radius  int     `json:"radius"`
-	Page    int     `json:"page"`
+	Lat      float64  `json:"lat" datastore:"lat,noindex"`
+	Lng      float64  `json:"lng" datastore:"lng,noindex"`
+	Keywords []string `json:"keywords" datastore:"keywords,noindex"`
+	Radius   int      `json:"radius" datastore:"raduis,noindex"`
+	Page     int      `json:"page" datastore:"page,noindex"`
+}
+
+type Restaurant struct {
+	PlaceID      string    `datastore:"place_id,noindex"`
+	RegisteredAt time.Time `datastore:"registered_at"`
+}
+
+type Favorite struct {
+	List []Restaurant `datastore:"list,noindex"`
 }
 
 type PostbackData struct {
 	Action string `json:"action"`
 	Query  Query  `json:"query"`
+}
+
+type Entity interface {
+	NameKey(name string, parent *datastore.Key) *datastore.Key
+}
+
+func (query *Query) NameKey(name string, parent *datastore.Key) *datastore.Key {
+	return datastore.NameKey("Query", name, parent)
+}
+
+func (restaurant *Restaurant) NameKey(name string, parent *datastore.Key) *datastore.Key {
+	return datastore.NameKey("Restaurant", name, parent)
+}
+
+func (favorite *Favorite) NameKey(name string, parent *datastore.Key) *datastore.Key {
+	return datastore.NameKey("Favorite", name, parent)
+}
+
+func Get(entity Entity, ctx context.Context, client *datastore.Client, name string, parent *datastore.Key) error {
+	key := entity.NameKey(name, parent)
+	err := client.Get(ctx, key, entity)
+	log.Println("[Get]", entity, err)
+	return err
+}
+
+func Save(entity Entity, ctx context.Context, client *datastore.Client, name string, parent *datastore.Key) error {
+	key := entity.NameKey(name, parent)
+	_, err := client.Put(ctx, key, entity)
+	log.Println("[Save]", entity, err)
+	return err
+}
+
+func Delete(entity Entity, ctx context.Context, client *datastore.Client, name string, parent *datastore.Key) error {
+	key := entity.NameKey(name, parent)
+	err := client.Delete(ctx, key)
+	log.Println("[Delete]", entity, err)
+	return err
 }
 
 func (q *Query) BuildURI(apiType, apiKey string) string {
@@ -52,8 +101,8 @@ func (q *Query) BuildURI(apiType, apiKey string) string {
 func (q *Query) Status() string {
 	var str string
 	str += fmt.Sprintf("距離: %s\n", radiusMap[q.Radius])
-	if q.Keyword != nil {
-		str += fmt.Sprintf("キーワード: %s\n", *q.Keyword)
+	if len(q.Keywords) > 0 {
+		str += fmt.Sprintf("キーワード: %v\n", q.Keywords)
 	}
 	return str
 }
@@ -85,6 +134,16 @@ func (q *Query) RadiusQuickReply() linebot.SendingMessage {
 func main() {
 	port := os.Getenv("PORT")
 
+	projID := os.Getenv("DATASTORE_PROJECT_ID")
+	if projID == "" {
+		log.Fatal(`You need to set the environment variable "DATASTORE_PROJECT_ID"`)
+	}
+	ctx := context.Background()
+	dsClient, err := datastore.NewClient(ctx, projID)
+	if err != nil {
+		log.Fatalf("Could not create datastore client: %v", err)
+	}
+
 	bot, err := linebot.New(
 		os.Getenv("LINE_CHANNEL_SECRET"),
 		os.Getenv("LINE_CHANNEL_TOKEN"),
@@ -115,15 +174,27 @@ func main() {
 					case "キーワード検索":
 						reply = linebot.NewTextMessage("ごめんなさい。今はまだ使えません(><)")
 					default:
-						reply = linebot.NewTextMessage(message.Text)
+						query := &Query{}
+						if err := Get(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
+							continue
+						}
+						// if query does not exists
+						//
+						//
+						query.Keywords = append(query.Keywords, message.Text)
+						if err := Save(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
+							continue
+						}
+						reply = query.SearchConfirmButton()
+						// linebot.NewTextMessage(message.Text)
 					}
 				case *linebot.LocationMessage:
 					query := Query{
-						Lat:     message.Latitude,
-						Lng:     message.Longitude,
-						Keyword: nil,
-						Radius:  500,
-						Page:    0,
+						Lat:      message.Latitude,
+						Lng:      message.Longitude,
+						Keywords: []string{},
+						Radius:   500,
+						Page:     0,
 					}
 					reply = query.SearchConfirmButton()
 				}
@@ -138,14 +209,27 @@ func main() {
 				}
 				switch postbackData.Action {
 				case "narrowDownRadius":
-					reply = postbackData.Query.RadiusQuickReply()
+					query := &postbackData.Query
+					if err := Save(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
+						continue
+					}
+					reply = query.RadiusQuickReply()
 				case "narrowDownKeyword":
-					reply = linebot.NewTextMessage("ごめんなさい。今はまだ使えません(><)")
+					query := &postbackData.Query
+					query.Keywords = []string{}
+					if err := Save(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
+						continue
+					}
+					reply = linebot.NewTextMessage("キーワードを入力してネ")
 				case "setRadius":
 					reply = postbackData.Query.SearchConfirmButton()
 				case "search":
-					uri := postbackData.Query.BuildURI("nearbysearch", placesAPIKey)
-					fmt.Println("[URI]", uri)
+					query := &postbackData.Query
+					if err := Save(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
+						continue
+					}
+					uri := query.BuildURI("nearbysearch", placesAPIKey)
+					log.Println("[URI]", uri)
 					nearbyPlaces, err := places.Search(uri)
 					if err != nil {
 						log.Print(err)
