@@ -51,5 +51,6 @@ jobs:
             --set-env-vars "LINE_CHANNEL_SECRET=${{ secrets.LINE_CHANNEL_SECRET }}" \
             --set-env-vars "LINE_CHANNEL_TOKEN=${{ secrets.LINE_CHANNEL_TOKEN }}" \
             --set-env-vars "GCP_PLACES_API_KEY=${{ secrets.GCP_PLACES_API_KEY }}" \
+            --set-env-vars "DATASTORE_PROJECT_ID=$GCP_PROJECT" \
             --allow-unauthenticated \
             --quiet
