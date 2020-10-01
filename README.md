@@ -30,8 +30,7 @@ $ echo "DATASTORE_PROJECT_ID=restaurant-search-XXXXXX" >> ./datastore/secret.env
 
 ## Run and Debug
 ```sh
-$ cd go-app/
-/go-app $ docker-compose up
+$ docker-compose up
 (another tab) $ ngrok http 8080
 ```
 
@@ -94,4 +93,5 @@ gcloud iam service-accounts add-iam-policy-binding ${PROJECT_NUMBER}-compute@dev
   ```
 
 ### GitHubへPush
-masterブランチへ
+- masterブランチへ
+- Google App Engineを有効化していないとDatastoreが使用できないので注意
