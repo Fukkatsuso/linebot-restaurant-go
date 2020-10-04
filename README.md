@@ -1,5 +1,5 @@
 # Restaurant Search App By Golang
-[![Deploy](https://github.com/Fukkatsuso/linebot-restaurant-go/workflows/Deploy/badge.svg)](https://github.com/Fukkatsuso/linebot-restaurant-go/actions/runs/267380868)
+[![Deploy](https://github.com/Fukkatsuso/linebot-restaurant-go/workflows/Deploy/badge.svg)](https://github.com/Fukkatsuso/linebot-restaurant-go/actions?query=workflow%3ADeploy)
 
 ## Setup
 ### Env
