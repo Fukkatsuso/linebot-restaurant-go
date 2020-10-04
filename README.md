@@ -4,34 +4,24 @@
 ## Setup
 ### Env
 ```sh
-$ touch ./go-app/line.env
+cat <<EOS >> ./go-app/secret.env
+LINE_CHANNEL_ID=hoge
+LINE_CHANNEL_SECRET=fuga
+LINE_CHANNEL_TOKEN=hogefuga
+GCP_PLACES_API_KEY=AAAAA
+DATASTORE_PROJECT_ID=restaurant-search-XXXXXX
+EOS
 
-# LINE チャネルID
-$ echo "LINE_CHANNEL_ID=hoge" >> ./go-app/line.env
-
-# LINE チャネルシークレット
-$ echo "LINE_CHANNEL_SECRET=fuga" >> ./go-app/line.env
-
-# LINE チャネルアクセストークン
-$ echo "LINE_CHANNEL_TOKEN=hogefuga" >> ./go-app/line.env
-
-$ touch ./go-app/gcp.env
-
-# GCP Places API キー
-$ echo "GCP_PLACES_API_KEY=AAAAA" >> ./go-app/gcp.env
-
-$ echo "DATASTORE_PROJECT_ID=restaurant-search-XXXXXX" >> ./go-app/gcp.env
-
-$ touch ./datastore/secret.env
-
-$ echo "DATASTORE_PROJECT_ID=restaurant-search-XXXXXX" >> ./datastore/secret.env
+cat <<EOS >> ./datastore/secret.env
+DATASTORE_PROJECT_ID=restaurant-search-XXXXXX
+EOS
 ```
 
 
 ## Run and Debug
 ```sh
-$ docker-compose up
-(another tab) $ ngrok http 8080
+docker-compose up
+(another tab) ngrok http 8080
 ```
 
 ## Deploy to Cloud Run
