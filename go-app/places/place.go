@@ -37,6 +37,7 @@ type Place struct {
 	Reference        string   `json:"reference"`
 	Scope            string   `json:"scope"`
 	Types            []string `json:"types"`
+	URL              string   `json:"url"`
 	UserRatingsTotal int      `json:"user_ratings_total"`
 	Vicinity         string   `json:"vicinity"`
 	Photos           []*struct {
