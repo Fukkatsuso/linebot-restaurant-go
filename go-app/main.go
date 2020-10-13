@@ -9,7 +9,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -31,20 +30,95 @@ func init() {
 
 // Query is data of user's request
 type Query struct {
-	Lat      float64  `json:"lat" datastore:"lat,noindex"`
-	Lng      float64  `json:"lng" datastore:"lng,noindex"`
-	Keywords []string `json:"keywords" datastore:"keywords,noindex"`
-	Radius   int      `json:"radius" datastore:"raduis,noindex"`
-	Page     int      `json:"page" datastore:"page,noindex"`
+	Lat      float64  `json:"lat,omitempty" datastore:"lat,noindex"`
+	Lng      float64  `json:"lng,omitempty" datastore:"lng,noindex"`
+	Keywords []string `json:"keywords,omitempty" datastore:"keywords,noindex"`
+	Radius   int      `json:"radius,omitempty" datastore:"raduis,noindex"`
+	Page     int      `json:"page,omitempty" datastore:"page,noindex"`
+	PlaceID  string   `json:"place_id,omitempty"`
 }
 
 type Restaurant struct {
-	PlaceID      string    `datastore:"place_id,noindex"`
-	RegisteredAt time.Time `datastore:"registered_at"`
+	PlaceID      string  `json:"place_id" datastore:"place_id,noindex"`
+	Name         string  `json:"name" datastore:"name,noindex"`
+	Rating       float64 `json:"rating" datastore:"rating,noindex"`
+	PhotoURI     string  `json:"photo_uri" datastore:"photo_uri,noindex"`
+	GoogleMapURI string  `json:"googlemap_uri" datastore:"googlemap_uri,noindex"`
 }
 
 type Favorite struct {
 	List []Restaurant `datastore:"list,noindex"`
+}
+
+func (favorite Favorite) MarshalMessage(maxBubble int) *linebot.FlexMessage {
+	carousel := favorite.MarshalCarousel(maxBubble)
+	return linebot.NewFlexMessage("お気に入りリスト", &carousel)
+}
+
+func (favorite Favorite) MarshalCarousel(maxBubble int) linebot.CarouselContainer {
+	bubbleContainers := make([]*linebot.BubbleContainer, 0)
+	for i := 0; i < len(favorite.List) && i < maxBubble; i++ {
+		bubble := favorite.List[i].MarshalBubble()
+		bubbleContainers = append(bubbleContainers, &bubble)
+	}
+	carousel := linebot.CarouselContainer{
+		Type:     linebot.FlexContainerTypeCarousel,
+		Contents: bubbleContainers,
+	}
+	return carousel
+}
+
+func (restaurant *Restaurant) MarshalBubble() linebot.BubbleContainer {
+	jsonBytes, _ := json.Marshal(&struct {
+		PlaceID string `json:"place_id"`
+	}{
+		PlaceID: restaurant.PlaceID,
+	})
+	return linebot.BubbleContainer{
+		Type: linebot.FlexContainerTypeBubble,
+		Size: linebot.FlexBubbleSizeTypeKilo,
+		Hero: &linebot.ImageComponent{
+			Type:       linebot.FlexComponentTypeImage,
+			URL:        restaurant.PhotoURI,
+			Size:       linebot.FlexImageSizeTypeFull,
+			AspectMode: linebot.FlexImageAspectModeTypeCover,
+		},
+		Body: &linebot.BoxComponent{
+			Type:   linebot.FlexComponentTypeBox,
+			Layout: linebot.FlexBoxLayoutTypeVertical,
+			Contents: []linebot.FlexComponent{
+				&linebot.TextComponent{
+					Type:   linebot.FlexComponentTypeText,
+					Text:   restaurant.Name,
+					Size:   linebot.FlexTextSizeTypeLg,
+					Weight: linebot.FlexTextWeightTypeBold,
+					Wrap:   true,
+				},
+				&linebot.BoxComponent{
+					Type:     linebot.FlexComponentTypeBox,
+					Layout:   linebot.FlexBoxLayoutTypeBaseline,
+					Contents: places.RatingStars(restaurant.Rating),
+					Margin:   linebot.FlexComponentMarginTypeMd,
+				},
+			},
+		},
+		Footer: &linebot.BoxComponent{
+			Type:   linebot.FlexComponentTypeBox,
+			Layout: linebot.FlexBoxLayoutTypeVertical,
+			Contents: []linebot.FlexComponent{
+				&linebot.ButtonComponent{
+					Type:   linebot.FlexComponentTypeButton,
+					Action: linebot.NewPostbackAction("お気に入りから削除", `{"action": "deleteFavorite", "query": `+string(jsonBytes)+`}`, "", ""),
+					Height: linebot.FlexButtonHeightTypeSm,
+				},
+				&linebot.ButtonComponent{
+					Type:   linebot.FlexComponentTypeButton,
+					Action: linebot.NewURIAction("マップで見る", restaurant.GoogleMapURI),
+					Height: linebot.FlexButtonHeightTypeSm,
+				},
+			},
+		},
+	}
 }
 
 type PostbackData struct {
@@ -182,8 +256,15 @@ func main() {
 					switch message.Text {
 					case "位置情報検索":
 						reply = places.LocationSendButton()
-					case "キーワード検索":
-						reply = linebot.NewTextMessage("ごめんなさい。今はまだ使えません(><)")
+					case "お気に入りを見る":
+						// ユーザのお気に入りリストを取得
+						favorite := &Favorite{}
+						err := Get(favorite, ctx, dsClient, event.Source.UserID, nil)
+						if err == datastore.ErrNoSuchEntity || len(favorite.List) == 0 {
+							reply = linebot.NewTextMessage("お気に入りがありません")
+						} else {
+							reply = favorite.MarshalMessage(10)
+						}
 					default:
 						query := &Query{}
 						if err := Get(query, ctx, dsClient, event.Source.UserID, nil); err != nil {
@@ -243,6 +324,66 @@ func main() {
 						reply = linebot.NewTextMessage("見つかりませんでした(´・ω・`)")
 					} else {
 						reply = nearbyPlaces.MarshalMessage(10)
+					}
+				case "addFavorite":
+					placeID := postbackData.Query.PlaceID
+					place, _ := places.SearchByID(placeID, placesAPIKey)
+					restaurant := &Restaurant{placeID, place.Name, place.Rating, place.PhotoURI(map[string]string{"key": placesAPIKey, "maxwidth": "350"}), place.URL}
+					// ユーザのお気に入りリストを取得
+					favorite := &Favorite{}
+					err := Get(favorite, ctx, dsClient, event.Source.UserID, nil)
+					if err == datastore.ErrNoSuchEntity {
+						// エンティティがなければ作成
+						favorite.List = []Restaurant{}
+					} else if err != nil {
+						continue
+					}
+					// お気に入りに追加
+					// 登録済みか否か
+					has := false
+					for _, place := range favorite.List {
+						if placeID == place.PlaceID {
+							has = true
+							break
+						}
+					}
+					if has {
+						reply = linebot.NewTextMessage("このお店は登録済みです")
+					} else if len(favorite.List) == 10 {
+						reply = linebot.NewTextMessage("お気に入りに登録できるのは最大10件です")
+					} else {
+						favorite.List = append(favorite.List, *restaurant)
+						err := Save(favorite, ctx, dsClient, event.Source.UserID, nil)
+						if err == nil {
+							reply = linebot.NewTextMessage(fmt.Sprintf("お気に入りに登録しました! (%d/10)", len(favorite.List)))
+						}
+					}
+				case "deleteFavorite":
+					placeID := postbackData.Query.PlaceID
+					// ユーザのお気に入りリストを取得
+					favorite := &Favorite{}
+					err := Get(favorite, ctx, dsClient, event.Source.UserID, nil)
+					if err != nil {
+						continue
+					}
+					newList := []Restaurant{}
+					had := false
+					for _, place := range favorite.List {
+						if placeID == place.PlaceID {
+							had = true
+						} else {
+							newList = append(newList, place)
+						}
+					}
+					if !had {
+						reply = linebot.NewTextMessage("すでに削除されています")
+					} else {
+						favorite.List = newList
+						if err := Save(favorite, ctx, dsClient, event.Source.UserID, nil); err != nil {
+							reply = linebot.NewTextMessage("削除に失敗しました...")
+						} else {
+							reply = linebot.NewTextMessage("お気に入り登録から削除しました!")
+						}
 					}
 				}
 			}

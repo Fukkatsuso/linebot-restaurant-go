@@ -2,6 +2,7 @@ package places
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -44,4 +45,27 @@ func Search(uri string) (Places, error) {
 	json.Unmarshal(body, &apiResp)
 
 	return apiResp.Places, nil
+}
+
+// SearchByID gets place and returns it by struct format
+func SearchByID(placeID, apiKey string) (*Place, error) {
+	uri := fmt.Sprintf("https://maps.googleapis.com/maps/api/place/details/json?placeid=%s&key=%s&language=ja", placeID, apiKey)
+	resp, err := http.Get(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	apiResp := struct {
+		HTMLAttributions []interface{} `json:"html_attributions"`
+		Place            Place         `json:"result"`
+		Status           string        `json:"status"`
+	}{}
+	json.Unmarshal(body, &apiResp)
+
+	return &apiResp.Place, nil
 }

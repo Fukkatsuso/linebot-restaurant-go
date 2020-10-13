@@ -1,6 +1,7 @@
 package places
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -36,6 +37,11 @@ func (places Places) MarshalCarousel(maxBubble int) linebot.CarouselContainer {
 
 // MarshalBubble builds a BubbleContainer
 func (place *Place) MarshalBubble() linebot.BubbleContainer {
+	jsonBytes, _ := json.Marshal(&struct {
+		PlaceID string `json:"place_id"`
+	}{
+		PlaceID: place.PlaceID,
+	})
 	return linebot.BubbleContainer{
 		Type: linebot.FlexContainerTypeBubble,
 		Size: linebot.FlexBubbleSizeTypeKilo,
@@ -69,11 +75,17 @@ func (place *Place) MarshalBubble() linebot.BubbleContainer {
 		},
 		Footer: &linebot.BoxComponent{
 			Type:   linebot.FlexComponentTypeBox,
-			Layout: linebot.FlexBoxLayoutTypeHorizontal,
+			Layout: linebot.FlexBoxLayoutTypeVertical,
 			Contents: []linebot.FlexComponent{
 				&linebot.ButtonComponent{
 					Type:   linebot.FlexComponentTypeButton,
+					Action: linebot.NewPostbackAction("お気に入りに登録", `{"action": "addFavorite", "query": `+string(jsonBytes)+`}`, "", ""),
+					Height: linebot.FlexButtonHeightTypeSm,
+				},
+				&linebot.ButtonComponent{
+					Type:   linebot.FlexComponentTypeButton,
 					Action: linebot.NewURIAction("マップで見る", place.GoogleMapURI()),
+					Height: linebot.FlexButtonHeightTypeSm,
 				},
 			},
 		},
