@@ -24,19 +24,10 @@ type NearbyPlaces struct {
 // NearbyPlace is a part of format of API response
 type NearbyPlace struct {
 	Geometry struct {
-		Location struct {
-			Lat string `json:"lat"`
-			Lng string `json:"lng"`
-		} `json:"location"`
+		Location LatLng `json:"location"`
 		Viewport struct {
-			Northeast struct {
-				Lat string `json:"lat"`
-				Lng string `json:"lng"`
-			} `json:"northeast"`
-			Southwest struct {
-				Lat string `json:"lat"`
-				Lng string `json:"lng"`
-			} `json:"southwest"`
+			Northeast LatLng `json:"northeast"`
+			Southwest LatLng `json:"southwest"`
 		} `json:"viewport"`
 	} `json:"geometry"`
 	Icon         string `json:"icon"`
