@@ -1,77 +1,38 @@
 package places
 
 import (
+	"encoding/json"
 	"strconv"
 )
 
-// Place is a part of the format of places-API's response
+// Place is main data struct
 type Place struct {
-	Geometry struct {
-		Location struct {
-			Lat float64 `json:"lat"`
-			Lng float64 `json:"lng"`
-		} `json:"location"`
-		Viewport struct {
-			Northeast struct {
-				Lat float64 `json:"lat"`
-				Lng float64 `json:"lng"`
-			} `json:"northeast"`
-			Southwest struct {
-				Lat float64 `json:"lat"`
-				Lng float64 `json:"lng"`
-			} `json:"southwest"`
-		} `json:"viewport"`
-	} `json:"geometry"`
-	Icon         string `json:"icon"`
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	OpeningHours struct {
-		OpenNow bool `json:"open_now"`
-	} `json:"opening_hours,omitempty"`
-	PlaceID  string `json:"place_id"`
-	PlusCode struct {
-		CompoundCode string `json:"compound_code"`
-		GlobalCode   string `json:"global_code"`
-	} `json:"plus_code"`
-	Rating           float64  `json:"rating"`
-	Reference        string   `json:"reference"`
-	Scope            string   `json:"scope"`
-	Types            []string `json:"types"`
-	URL              string   `json:"url"`
-	UserRatingsTotal int      `json:"user_ratings_total"`
-	Vicinity         string   `json:"vicinity"`
-	Photos           []*struct {
-		Height           int      `json:"height"`
-		HTMLAttributions []string `json:"html_attributions"`
-		PhotoReference   string   `json:"photo_reference"`
-		Width            int      `json:"width"`
-	} `json:"photos"`
-	PriceLevel int `json:"price_level,omitempty"`
+	PlaceID      string  `json:"place_id" datastore:"place_id,noindex"`
+	Name         string  `json:"name" datastore:"name,noindex"`
+	Rating       float64 `json:"rating" datastore:"rating,noindex"`
+	PhotoURI     string  `json:"photo_uri" datastore:"photo_uri,noindex"`
+	GooglemapURI string  `json:"googlemap_uri" datastore:"googlemap_uri,noindex"`
 }
 
-// Latitude returns the latitude of the place
-func (place *Place) Latitude() string {
-	return strconv.FormatFloat(place.Geometry.Location.Lat, 'f', -1, 64)
+// Places is Place slice
+type Places []Place
+
+// LatLng is used to unmarshal json
+type LatLng struct {
+	Lat string `json:"lat"`
+	Lng string `json:"lng"`
 }
 
-// Longitude returns the longitude of the place
-func (place *Place) Longitude() string {
-	return strconv.FormatFloat(place.Geometry.Location.Lng, 'f', -1, 64)
-}
-
-// PhotoURI returns uri
-func (place *Place) PhotoURI(params map[string]string) string {
-	if len(place.Photos) == 0 {
-		return AlternativePhotoURI()
+// UnmarshalJSON interface
+func (ll *LatLng) UnmarshalJSON(b []byte) error {
+	a := struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}{}
+	if err := json.Unmarshal(b, &a); err != nil {
+		return err
 	}
-	params["photoreference"] = place.Photos[0].PhotoReference
-	return GoogleMapPhotoURI(params)
-}
-
-// GoogleMapURI returns uri of the place on googlemap
-func (place *Place) GoogleMapURI() string {
-	uri := "https://www.google.com/maps/search/?api=1"
-	uri += "&query=" + place.Latitude() + "," + place.Longitude()
-	uri += "&query_place_id" + place.ID
-	return uri
+	ll.Lat = strconv.FormatFloat(a.Lat, 'f', -1, 64)
+	ll.Lng = strconv.FormatFloat(a.Lng, 'f', -1, 64)
+	return nil
 }
