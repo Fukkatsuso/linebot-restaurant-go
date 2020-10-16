@@ -152,10 +152,6 @@ func AddKeyword(ctx context.Context, keyword, userID, replyToken string, bot *li
 
 // ShowNearbyPlaces shows nearby search result
 func ShowNearbyPlaces(ctx context.Context, q *Query, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
-	if err := Save(ctx, dsClient, q, userID, nil); err != nil {
-		ReplyMessage(bot, replyToken, Text("検索に失敗しました..."))
-		return
-	}
 	p := new(NearbyPlaces)
 	uri, err := NearbySearch(q, (*places.Places)(p))
 	log.Println("[URI]", uri)
