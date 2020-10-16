@@ -66,7 +66,7 @@ func (pb *Postback) UnmarshalJSON(b []byte) error {
 
 	switch a.Action {
 	case PostbackActionAddFavorite, PostbackActionDeleteFavorite:
-		p := new(PlaceID)
+		p := new(PlaceInfo)
 		if err := json.Unmarshal(a.Data, p); err != nil {
 			return err
 		}
@@ -82,16 +82,17 @@ func (pb *Postback) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// PlaceID is is used to postback
-type PlaceID struct {
-	ID string `json:"place_id"`
+// PlaceInfo is is used to postback
+type PlaceInfo struct {
+	PlaceID  string `json:"place_id"`
+	PhotoURI string `json:"photo_uri"`
 }
 
 // PostbackData is interface PostbackData
 func (q *Query) PostbackData() {}
 
 // PostbackData is interface PostbackData
-func (p *PlaceID) PostbackData() {}
+func (p *PlaceInfo) PostbackData() {}
 
 // LocationSendButton message
 func LocationSendButton() *linebot.TemplateMessage {
@@ -158,6 +159,10 @@ type FavoritePlace places.Place
 
 // MarshalBubble is PlaceBubble interface
 func (p *NearbyPlace) MarshalBubble() *linebot.BubbleContainer {
+	info := PlaceInfo{
+		PlaceID:  p.PlaceID,
+		PhotoURI: p.PhotoURI,
+	}
 	bubble := linebot.BubbleContainer{
 		Type: linebot.FlexContainerTypeBubble,
 		Size: linebot.FlexBubbleSizeTypeKilo,
@@ -192,7 +197,7 @@ func (p *NearbyPlace) MarshalBubble() *linebot.BubbleContainer {
 			Contents: []linebot.FlexComponent{
 				&linebot.ButtonComponent{
 					Type:   linebot.FlexComponentTypeButton,
-					Action: linebot.NewPostbackAction("お気に入りに登録", PostbackJSON(PostbackActionAddFavorite, &PlaceID{p.PlaceID}), "", ""),
+					Action: linebot.NewPostbackAction("お気に入りに登録", PostbackJSON(PostbackActionAddFavorite, &info), "", ""),
 					Height: linebot.FlexButtonHeightTypeSm,
 				},
 				&linebot.ButtonComponent{
@@ -208,6 +213,9 @@ func (p *NearbyPlace) MarshalBubble() *linebot.BubbleContainer {
 
 // MarshalBubble is PlaceBubble interface
 func (p *FavoritePlace) MarshalBubble() *linebot.BubbleContainer {
+	info := PlaceInfo{
+		PlaceID: p.PlaceID,
+	}
 	bubble := linebot.BubbleContainer{
 		Type: linebot.FlexContainerTypeBubble,
 		Size: linebot.FlexBubbleSizeTypeKilo,
@@ -242,7 +250,7 @@ func (p *FavoritePlace) MarshalBubble() *linebot.BubbleContainer {
 			Contents: []linebot.FlexComponent{
 				&linebot.ButtonComponent{
 					Type:   linebot.FlexComponentTypeButton,
-					Action: linebot.NewPostbackAction("お気に入りから削除", PostbackJSON(PostbackActionDeleteFavorite, &PlaceID{p.PlaceID}), "", ""),
+					Action: linebot.NewPostbackAction("お気に入りから削除", PostbackJSON(PostbackActionDeleteFavorite, &info), "", ""),
 					Height: linebot.FlexButtonHeightTypeSm,
 				},
 				&linebot.ButtonComponent{

@@ -107,9 +107,9 @@ func PostbackController(ctx context.Context, event *linebot.Event, bot *linebot.
 	case PostbackActionNearbySearch:
 		ShowNearbyPlaces(ctx, data.(*Query), userID, replyToken, bot, dsClient)
 	case PostbackActionAddFavorite:
-		AddFavorite(ctx, data.(*PlaceID), userID, replyToken, bot, dsClient)
+		AddFavorite(ctx, data.(*PlaceInfo), userID, replyToken, bot, dsClient)
 	case PostbackActionDeleteFavorite:
-		DeleteFavorite(ctx, data.(*PlaceID), userID, replyToken, bot, dsClient)
+		DeleteFavorite(ctx, data.(*PlaceInfo), userID, replyToken, bot, dsClient)
 	}
 }
 
@@ -180,8 +180,8 @@ func ShowFavorite(ctx context.Context, userID, replyToken string, bot *linebot.C
 }
 
 // AddFavorite adds favorite
-func AddFavorite(ctx context.Context, id *PlaceID, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
-	placeID := id.ID
+func AddFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
+	placeID := info.PlaceID
 	p := new(places.Place)
 	uri, err := DetailsSearch(placeID, p)
 	log.Println("[URI]", uri)
@@ -213,6 +213,8 @@ func AddFavorite(ctx context.Context, id *PlaceID, userID, replyToken string, bo
 		ReplyMessage(bot, replyToken, Text(text))
 		return
 	}
+	// 検索結果表示に使ったものと同じ画像
+	p.PhotoURI = info.PhotoURI
 	f.List = append(f.List, *p)
 	if err := Save(ctx, dsClient, f, userID, nil); err != nil {
 		ReplyMessage(bot, replyToken, Text("お気に入り登録に失敗しました..."))
@@ -223,8 +225,8 @@ func AddFavorite(ctx context.Context, id *PlaceID, userID, replyToken string, bo
 }
 
 // DeleteFavorite deletes user's favorite
-func DeleteFavorite(ctx context.Context, id *PlaceID, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
-	placeID := id.ID
+func DeleteFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
+	placeID := info.PlaceID
 	// お気に入りリストを取得
 	f := new(Favorite)
 	err := Get(ctx, dsClient, f, userID, nil)

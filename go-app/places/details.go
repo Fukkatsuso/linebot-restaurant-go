@@ -72,24 +72,10 @@ type Details struct {
 
 // MarshalPlace converts Details to Place
 func (p *Details) MarshalPlace() Place {
-	params := map[string]string{
-		"key":      placesAPIKey,
-		"maxwidth": "350",
-	}
 	return Place{
 		PlaceID:      p.PlaceID,
 		Name:         p.Name,
 		Rating:       p.Rating,
-		PhotoURI:     p.PhotoURI(params),
 		GooglemapURI: p.URL,
 	}
-}
-
-// PhotoURI returns uri
-func (p *Details) PhotoURI(params map[string]string) string {
-	if len(p.Photos) == 0 {
-		return AlternativePhotoURI()
-	}
-	params["photoreference"] = p.Photos[0].PhotoReference
-	return GooglemapPhotoURI(params)
 }
