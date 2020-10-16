@@ -137,6 +137,6 @@ func GooglemapPhotoURI(params map[string]string) string {
 func (p *NearbyPlace) GooglemapURI() string {
 	uri := "https://www.google.com/maps/search/?api=1"
 	uri += "&query=" + p.Geometry.Location.Lat + "," + p.Geometry.Location.Lng
-	uri += "&query_place_id" + p.PlaceID
+	uri += "&query_place_id=" + p.PlaceID
 	return uri
 }
