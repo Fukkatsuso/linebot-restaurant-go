@@ -98,17 +98,17 @@ func PostbackController(ctx context.Context, event *linebot.Event, bot *linebot.
 	replyToken := event.ReplyToken
 
 	switch postback.Action {
-	case "changeRadius":
+	case PostbackActionChangeRadius:
 		ChangeRadius(ctx, data.(*Query), userID, replyToken, bot, dsClient)
-	case "changeKeyword":
+	case PostbackActionChangeKeyword:
 		ChangeKeyword(ctx, data.(*Query), userID, replyToken, bot, dsClient)
-	case "updateRadius":
+	case PostbackActionUpdateRadius:
 		UpdateRadius(ctx, data.(*Query), userID, replyToken, bot, dsClient)
-	case "nearbySearch":
+	case PostbackActionNearbySearch:
 		ShowNearbyPlaces(ctx, data.(*Query), userID, replyToken, bot, dsClient)
-	case "addFavorite":
+	case PostbackActionAddFavorite:
 		AddFavorite(ctx, data.(*PlaceID), userID, replyToken, bot, dsClient)
-	case "deleteFavorite":
+	case PostbackActionDeleteFavorite:
 		DeleteFavorite(ctx, data.(*PlaceID), userID, replyToken, bot, dsClient)
 	}
 }

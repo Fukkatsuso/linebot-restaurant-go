@@ -20,6 +20,17 @@ func init() {
 	}
 }
 
+type PostbackAction string
+
+const (
+	PostbackActionChangeRadius   PostbackAction = "changeRadius"
+	PostbackActionChangeKeyword  PostbackAction = "changeKeyword"
+	PostbackActionUpdateRadius   PostbackAction = "updateRadius"
+	PostbackActionNearbySearch   PostbackAction = "nearbySearch"
+	PostbackActionAddFavorite    PostbackAction = "addFavorite"
+	PostbackActionDeleteFavorite PostbackAction = "deleteFavorite"
+)
+
 // PostbackData is used in Postback
 type PostbackData interface {
 	PostbackData()
@@ -27,12 +38,12 @@ type PostbackData interface {
 
 // Postback is used to pustback
 type Postback struct {
-	Action string       `json:"action"`
-	Data   PostbackData `json:"data"`
+	Action PostbackAction `json:"action"`
+	Data   PostbackData   `json:"data"`
 }
 
 // PostbackJSON converts PostbackData to json string
-func PostbackJSON(action string, pbData PostbackData) string {
+func PostbackJSON(action PostbackAction, pbData PostbackData) string {
 	b, _ := json.Marshal(&Postback{
 		Action: action,
 		Data:   pbData,
@@ -53,13 +64,14 @@ func (pb *Postback) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if a.Action == "addFavorite" || a.Action == "deleteFavorite" {
+	switch a.Action {
+	case PostbackActionAddFavorite, PostbackActionDeleteFavorite:
 		p := new(PlaceID)
 		if err := json.Unmarshal(a.Data, p); err != nil {
 			return err
 		}
 		pb.Data = p
-	} else {
+	default:
 		q := new(Query)
 		if err := json.Unmarshal(a.Data, q); err != nil {
 			return err
@@ -98,9 +110,9 @@ func SearchConfirmWindow(q *Query) *linebot.TemplateMessage {
 		label["changeKeyword"] = "キーワードを設定し直す"
 	}
 	actions := []linebot.TemplateAction{
-		linebot.NewPostbackAction("距離で絞り込み", PostbackJSON("changeRadius", q), "", ""),
-		linebot.NewPostbackAction(label["changeKeyword"], PostbackJSON("changeKeyword", q), "", ""),
-		linebot.NewPostbackAction("検索する", PostbackJSON("nearbySearch", q), "", ""),
+		linebot.NewPostbackAction("距離で絞り込み", PostbackJSON(PostbackActionChangeRadius, q), "", ""),
+		linebot.NewPostbackAction(label["changeKeyword"], PostbackJSON(PostbackActionChangeKeyword, q), "", ""),
+		linebot.NewPostbackAction("検索する", PostbackJSON(PostbackActionNearbySearch, q), "", ""),
 	}
 	buttons := linebot.NewButtonsTemplate("", "絞り込みますか？", status(q), actions...)
 	return linebot.NewTemplateMessage("確認ボタン", buttons)
@@ -120,7 +132,7 @@ func RadiusQuickReply(q *Query) linebot.SendingMessage {
 	buttons := make([]*linebot.QuickReplyButton, 0)
 	for i := range radiusKey {
 		q.Radius = radiusValue[i]
-		postbackString := PostbackJSON("updateRadius", q)
+		postbackString := PostbackJSON(PostbackActionUpdateRadius, q)
 		b := linebot.NewQuickReplyButton("", linebot.NewPostbackAction(radiusKey[i], postbackString, "", radiusKey[i]))
 		buttons = append(buttons, b)
 	}
@@ -180,7 +192,7 @@ func (p *NearbyPlace) MarshalBubble() *linebot.BubbleContainer {
 			Contents: []linebot.FlexComponent{
 				&linebot.ButtonComponent{
 					Type:   linebot.FlexComponentTypeButton,
-					Action: linebot.NewPostbackAction("お気に入りに登録", PostbackJSON("addFavorite", &PlaceID{p.PlaceID}), "", ""),
+					Action: linebot.NewPostbackAction("お気に入りに登録", PostbackJSON(PostbackActionAddFavorite, &PlaceID{p.PlaceID}), "", ""),
 					Height: linebot.FlexButtonHeightTypeSm,
 				},
 				&linebot.ButtonComponent{
@@ -230,7 +242,7 @@ func (p *FavoritePlace) MarshalBubble() *linebot.BubbleContainer {
 			Contents: []linebot.FlexComponent{
 				&linebot.ButtonComponent{
 					Type:   linebot.FlexComponentTypeButton,
-					Action: linebot.NewPostbackAction("お気に入りから削除", PostbackJSON("deleteFavorite", &PlaceID{p.PlaceID}), "", ""),
+					Action: linebot.NewPostbackAction("お気に入りから削除", PostbackJSON(PostbackActionDeleteFavorite, &PlaceID{p.PlaceID}), "", ""),
 					Height: linebot.FlexButtonHeightTypeSm,
 				},
 				&linebot.ButtonComponent{
