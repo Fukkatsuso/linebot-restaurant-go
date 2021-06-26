@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"log"
 
 	"cloud.google.com/go/datastore"
@@ -11,6 +13,13 @@ import (
 // Entity is Datastore Resource
 type Entity interface {
 	NameKey(name string, parent *datastore.Key) *datastore.Key
+}
+
+// sha256でハッシュ化して64文字の文字列にする
+func HashedString(base string) string {
+	hashBytes := sha256.Sum256([]byte(base))
+	hashString := hex.EncodeToString(hashBytes[:])
+	return hashString
 }
 
 // Query inplements Entity interface
@@ -35,6 +44,7 @@ func NewQuery(lat, lng string) Query {
 
 // NameKey returns Query's Datastore-Key
 func (query *Query) NameKey(name string, parent *datastore.Key) *datastore.Key {
+	name = HashedString(name)
 	return datastore.NameKey("Query", name, parent)
 }
 
@@ -45,6 +55,7 @@ type Favorite struct {
 
 // NameKey returns Favorite's Datastore-Key
 func (favorite *Favorite) NameKey(name string, parent *datastore.Key) *datastore.Key {
+	name = HashedString(name)
 	return datastore.NameKey("Favorite", name, parent)
 }
 
