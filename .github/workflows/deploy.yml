@@ -4,10 +4,10 @@ on:
   push:
     branches:
       - master
-    paths:
-      - '**'
-      - '!README.md'
-      - '!.gitignore'
+    paths-ignore:
+      - 'datastore/**'
+      - 'README.md'
+      - '.gitignore'
 
 env:
   GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
@@ -16,16 +16,16 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     defaults:
       run:
         working-directory: go-app
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       
       - name: GCP Authenticate
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@master
         with:
           project_id: ${{ secrets.GCP_PROJECT }}
           service_account_key: ${{ secrets.GCP_SA_KEY }}
