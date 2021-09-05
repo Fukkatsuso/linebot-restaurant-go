@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"cloud.google.com/go/datastore"
+	mystore "github.com/Fukkatsuso/linebot-restaurant-go/go-app/datastore"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
@@ -82,7 +83,13 @@ func TextMessageController(ctx context.Context, message *linebot.TextMessage, us
 // LocationMessageController controller
 func LocationMessageController(ctx context.Context, message *linebot.LocationMessage, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
 	lat, lng := float64ToString(message.Latitude), float64ToString(message.Longitude)
-	query := NewQuery(lat, lng)
+	query := Query{
+		Lat:      lat,
+		Lng:      lng,
+		Keywords: []string{},
+		Radius:   "500",
+		Page:     0,
+	}
 	ReplyMessage(bot, replyToken, SearchConfirmWindow(&query))
 }
 
@@ -115,7 +122,7 @@ func PostbackController(ctx context.Context, event *linebot.Event, bot *linebot.
 
 // ChangeRadius responds to changeRadius postback
 func ChangeRadius(ctx context.Context, q *Query, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
-	if err := Save(ctx, dsClient, q, userID, nil); err != nil {
+	if err := mystore.Save(ctx, dsClient, (*mystore.Query)(q), userID, nil); err != nil {
 		return
 	}
 	ReplyMessage(bot, replyToken, RadiusQuickReply(q))
@@ -124,7 +131,7 @@ func ChangeRadius(ctx context.Context, q *Query, userID, replyToken string, bot 
 // ChangeKeyword responds to changeKeyword postback
 func ChangeKeyword(ctx context.Context, q *Query, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
 	q.Keywords = []string{}
-	if err := Save(ctx, dsClient, q, userID, nil); err != nil {
+	if err := mystore.Save(ctx, dsClient, (*mystore.Query)(q), userID, nil); err != nil {
 		return
 	}
 	ReplyMessage(bot, replyToken, Text("キーワードを入力してネ\n送ったメッセージの数だけキーワードが追加されます!"))
@@ -138,12 +145,12 @@ func UpdateRadius(ctx context.Context, q *Query, userID, replyToken string, bot 
 // AddKeyword adds keyword
 func AddKeyword(ctx context.Context, keyword, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
 	q := new(Query)
-	if err := Get(ctx, dsClient, q, userID, nil); err != nil {
+	if err := mystore.Get(ctx, dsClient, (*mystore.Query)(q), userID, nil); err != nil {
 		ReplyMessage(bot, replyToken, Text("位置情報を送信して「キーワードで絞り込み」を選択してください"))
 		return
 	}
 	q.Keywords = append(q.Keywords, keyword)
-	if err := Save(ctx, dsClient, q, userID, nil); err != nil {
+	if err := mystore.Save(ctx, dsClient, (*mystore.Query)(q), userID, nil); err != nil {
 		ReplyMessage(bot, replyToken, Text("キーワードの保存に失敗しました．\nもう一度送信してくださいm(__)m"))
 		return
 	}
@@ -169,8 +176,8 @@ func ShowNearbyPlaces(ctx context.Context, q *Query, userID, replyToken string, 
 
 // ShowFavorite shows user's favorite
 func ShowFavorite(ctx context.Context, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
-	f := new(Favorite)
-	err := Get(ctx, dsClient, f, userID, nil)
+	f := new(mystore.Favorite)
+	err := mystore.Get(ctx, dsClient, f, userID, nil)
 	if err == datastore.ErrNoSuchEntity || len(f.List) == 0 {
 		ReplyMessage(bot, replyToken, Text("お気に入りがありません"))
 		return
@@ -191,8 +198,8 @@ func AddFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken string
 		return
 	}
 	// Datastoreからリストを取得してお気に入り追加
-	f := new(Favorite)
-	err = Get(ctx, dsClient, f, userID, nil)
+	f := new(mystore.Favorite)
+	err = mystore.Get(ctx, dsClient, f, userID, nil)
 	if err == datastore.ErrNoSuchEntity {
 		// エンティティがなければ作成
 		f.List = []places.Place{}
@@ -216,7 +223,7 @@ func AddFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken string
 	// 検索結果表示に使ったものと同じ画像
 	p.PhotoURI = info.PhotoURI
 	f.List = append(f.List, *p)
-	if err := Save(ctx, dsClient, f, userID, nil); err != nil {
+	if err := mystore.Save(ctx, dsClient, f, userID, nil); err != nil {
 		ReplyMessage(bot, replyToken, Text("お気に入り登録に失敗しました..."))
 		return
 	}
@@ -228,8 +235,8 @@ func AddFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken string
 func DeleteFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken string, bot *linebot.Client, dsClient *datastore.Client) {
 	placeID := info.PlaceID
 	// お気に入りリストを取得
-	f := new(Favorite)
-	err := Get(ctx, dsClient, f, userID, nil)
+	f := new(mystore.Favorite)
+	err := mystore.Get(ctx, dsClient, f, userID, nil)
 	if err != nil {
 		ReplyMessage(bot, replyToken, Text("お気に入り削除に失敗しました..."))
 		return
@@ -249,7 +256,7 @@ func DeleteFavorite(ctx context.Context, info *PlaceInfo, userID, replyToken str
 		return
 	}
 	f.List = newList
-	if err := Save(ctx, dsClient, f, userID, nil); err != nil {
+	if err := mystore.Save(ctx, dsClient, f, userID, nil); err != nil {
 		ReplyMessage(bot, replyToken, Text("お気に入り削除に失敗しました..."))
 		return
 	}

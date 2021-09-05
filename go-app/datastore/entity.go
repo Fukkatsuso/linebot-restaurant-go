@@ -1,4 +1,4 @@
-package main
+package datastore
 
 import (
 	"context"
@@ -15,8 +15,32 @@ type Entity interface {
 	NameKey(name string, parent *datastore.Key) *datastore.Key
 }
 
+// Get Entity from Datastore
+func Get(ctx context.Context, client *datastore.Client, entity Entity, name string, parent *datastore.Key) error {
+	key := entity.NameKey(name, parent)
+	err := client.Get(ctx, key, entity)
+	log.Println("[Get]", entity, err)
+	return err
+}
+
+// Save Entity in Datastore
+func Save(ctx context.Context, client *datastore.Client, entity Entity, name string, parent *datastore.Key) error {
+	key := entity.NameKey(name, parent)
+	_, err := client.Put(ctx, key, entity)
+	log.Println("[Save]", entity, err)
+	return err
+}
+
+// Delete Entity from Datastore
+func Delete(ctx context.Context, client *datastore.Client, entity Entity, name string, parent *datastore.Key) error {
+	key := entity.NameKey(name, parent)
+	err := client.Delete(ctx, key)
+	log.Println("[Delete]", entity, err)
+	return err
+}
+
 // sha256でハッシュ化して64文字の文字列にする
-func HashedString(base string) string {
+func hashedString(base string) string {
 	hashBytes := sha256.Sum256([]byte(base))
 	hashString := hex.EncodeToString(hashBytes[:])
 	return hashString
@@ -44,7 +68,7 @@ func NewQuery(lat, lng string) Query {
 
 // NameKey returns Query's Datastore-Key
 func (query *Query) NameKey(name string, parent *datastore.Key) *datastore.Key {
-	name = HashedString(name)
+	name = hashedString(name)
 	return datastore.NameKey("Query", name, parent)
 }
 
@@ -55,30 +79,6 @@ type Favorite struct {
 
 // NameKey returns Favorite's Datastore-Key
 func (favorite *Favorite) NameKey(name string, parent *datastore.Key) *datastore.Key {
-	name = HashedString(name)
+	name = hashedString(name)
 	return datastore.NameKey("Favorite", name, parent)
-}
-
-// Get Entity from Datastore
-func Get(ctx context.Context, client *datastore.Client, entity Entity, name string, parent *datastore.Key) error {
-	key := entity.NameKey(name, parent)
-	err := client.Get(ctx, key, entity)
-	log.Println("[Get]", entity, err)
-	return err
-}
-
-// Save Entity in Datastore
-func Save(ctx context.Context, client *datastore.Client, entity Entity, name string, parent *datastore.Key) error {
-	key := entity.NameKey(name, parent)
-	_, err := client.Put(ctx, key, entity)
-	log.Println("[Save]", entity, err)
-	return err
-}
-
-// Delete Entity from Datastore
-func Delete(ctx context.Context, client *datastore.Client, entity Entity, name string, parent *datastore.Key) error {
-	key := entity.NameKey(name, parent)
-	err := client.Delete(ctx, key)
-	log.Println("[Delete]", entity, err)
-	return err
 }

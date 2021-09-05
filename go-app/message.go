@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/datastore"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
@@ -35,6 +36,17 @@ const (
 type PostbackData interface {
 	PostbackData()
 }
+
+type Query datastore.Query
+
+func (q *Query) PostbackData() {}
+
+type PlaceInfo struct {
+	PlaceID  string `json:"place_id"`
+	PhotoURI string `json:"photo_uri"`
+}
+
+func (p *PlaceInfo) PostbackData() {}
 
 // Postback is used to pustback
 type Postback struct {
@@ -81,18 +93,6 @@ func (pb *Postback) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
-
-// PlaceInfo is is used to postback
-type PlaceInfo struct {
-	PlaceID  string `json:"place_id"`
-	PhotoURI string `json:"photo_uri"`
-}
-
-// PostbackData is interface PostbackData
-func (q *Query) PostbackData() {}
-
-// PostbackData is interface PostbackData
-func (p *PlaceInfo) PostbackData() {}
 
 // LocationSendButton message
 func LocationSendButton() *linebot.TemplateMessage {
