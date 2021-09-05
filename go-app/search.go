@@ -4,22 +4,16 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/config"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 )
-
-var placesAPIKey string
-
-func init() {
-	placesAPIKey = os.Getenv("GCP_PLACES_API_KEY")
-}
 
 // QueryToMap converts Query to map[string]string
 func QueryToMap(query *Query) map[string]string {
 	params := map[string]string{
-		"key":      placesAPIKey,
+		"key":      config.GCPPlacesAPIKey,
 		"type":     "restaurant",
 		"location": query.Lat + "," + query.Lng,
 		"radius":   query.Radius,
@@ -61,7 +55,7 @@ func NearbySearch(query *Query, p *places.Places) (string, error) {
 
 // DetailsSearch gets details
 func DetailsSearch(placeID string, p *places.Place) (string, error) {
-	uri := BuildURI("details", map[string]string{"placeid": placeID, "key": placesAPIKey})
+	uri := BuildURI("details", map[string]string{"placeid": placeID, "key": config.GCPPlacesAPIKey})
 	resp, err := http.Get(uri)
 	if err != nil {
 		return uri, err

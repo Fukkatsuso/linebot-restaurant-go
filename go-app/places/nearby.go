@@ -4,15 +4,10 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
+
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/config"
 )
-
-var placesAPIKey string
-
-func init() {
-	placesAPIKey = os.Getenv("GCP_PLACES_API_KEY")
-}
 
 // NearbyPlaces is a response of nearby-search
 type NearbyPlaces struct {
@@ -59,7 +54,7 @@ type NearbyPlace struct {
 // MarshalPlace converts NearbyPlace to Place
 func (p *NearbyPlace) MarshalPlace() Place {
 	params := map[string]string{
-		"key":      placesAPIKey,
+		"key":      config.GCPPlacesAPIKey,
 		"maxwidth": "350",
 	}
 	return Place{
