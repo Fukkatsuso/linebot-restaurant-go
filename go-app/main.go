@@ -19,6 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not create datastore client: %v", err)
 	}
+	defer dsClient.Close()
 
 	bot, err := linebot.New(config.LINEChannelSecret, config.LINEChannelToken)
 	if err != nil {
