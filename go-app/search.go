@@ -6,12 +6,13 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/bot"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/config"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 )
 
 // QueryToMap converts Query to map[string]string
-func QueryToMap(query *Query) map[string]string {
+func QueryToMap(query *bot.Query) map[string]string {
 	params := map[string]string{
 		"key":      config.GCPPlacesAPIKey,
 		"type":     "restaurant",
@@ -34,7 +35,7 @@ func BuildURI(apiType string, params map[string]string) string {
 }
 
 // NearbySearch gets places
-func NearbySearch(query *Query, p *places.Places) (string, error) {
+func NearbySearch(query *bot.Query, p *places.Places) (string, error) {
 	uri := BuildURI("nearbysearch", QueryToMap(query))
 	resp, err := http.Get(uri)
 	if err != nil {
