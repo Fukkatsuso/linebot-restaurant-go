@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -66,10 +67,18 @@ func (p *NearbyPlace) MarshalPlace(gcpPlacesAPIKey string) Place {
 
 // MarshalPlaces converts NearbyPlaces to Places
 func (p *NearbyPlaces) MarshalPlaces(gcpPlacesAPIKey string) Places {
-	places := make(Places, 0)
+	places := make(Places, len(p.Results))
+
+	var wg sync.WaitGroup
 	for i := range p.Results {
-		places = append(places, p.Results[i].MarshalPlace(gcpPlacesAPIKey))
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			places[idx] = p.Results[idx].MarshalPlace(gcpPlacesAPIKey)
+		}(i)
 	}
+	wg.Wait()
+
 	return places
 }
 
