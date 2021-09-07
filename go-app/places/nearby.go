@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/config"
 )
 
 // NearbyPlaces is a response of nearby-search
@@ -52,9 +50,9 @@ type NearbyPlace struct {
 }
 
 // MarshalPlace converts NearbyPlace to Place
-func (p *NearbyPlace) MarshalPlace() Place {
+func (p *NearbyPlace) MarshalPlace(gcpPlacesAPIKey string) Place {
 	params := map[string]string{
-		"key":      config.GCPPlacesAPIKey,
+		"key":      gcpPlacesAPIKey,
 		"maxwidth": "350",
 	}
 	return Place{
@@ -67,10 +65,10 @@ func (p *NearbyPlace) MarshalPlace() Place {
 }
 
 // MarshalPlaces converts NearbyPlaces to Places
-func (p *NearbyPlaces) MarshalPlaces() Places {
+func (p *NearbyPlaces) MarshalPlaces(gcpPlacesAPIKey string) Places {
 	places := make(Places, 0)
 	for i := range p.Results {
-		places = append(places, p.Results[i].MarshalPlace())
+		places = append(places, p.Results[i].MarshalPlace(gcpPlacesAPIKey))
 	}
 	return places
 }

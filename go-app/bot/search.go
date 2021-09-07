@@ -34,7 +34,7 @@ func (bot *Bot) NearbySearch(query *Query) (*places.Places, error) {
 	var nearby places.NearbyPlaces
 	json.Unmarshal(body, &nearby)
 
-	p := nearby.MarshalPlaces()
+	p := nearby.MarshalPlaces(bot.GCPPlacesAPIKey)
 	return &p, nil
 }
 
