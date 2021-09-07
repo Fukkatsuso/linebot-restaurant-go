@@ -4,15 +4,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 )
-
-var placesAPIKey string
-
-func init() {
-	placesAPIKey = os.Getenv("GCP_PLACES_API_KEY")
-}
 
 // NearbyPlaces is a response of nearby-search
 type NearbyPlaces struct {
@@ -57,9 +50,9 @@ type NearbyPlace struct {
 }
 
 // MarshalPlace converts NearbyPlace to Place
-func (p *NearbyPlace) MarshalPlace() Place {
+func (p *NearbyPlace) MarshalPlace(gcpPlacesAPIKey string) Place {
 	params := map[string]string{
-		"key":      placesAPIKey,
+		"key":      gcpPlacesAPIKey,
 		"maxwidth": "350",
 	}
 	return Place{
@@ -72,10 +65,10 @@ func (p *NearbyPlace) MarshalPlace() Place {
 }
 
 // MarshalPlaces converts NearbyPlaces to Places
-func (p *NearbyPlaces) MarshalPlaces() Places {
+func (p *NearbyPlaces) MarshalPlaces(gcpPlacesAPIKey string) Places {
 	places := make(Places, 0)
 	for i := range p.Results {
-		places = append(places, p.Results[i].MarshalPlace())
+		places = append(places, p.Results[i].MarshalPlace(gcpPlacesAPIKey))
 	}
 	return places
 }

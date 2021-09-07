@@ -1,9 +1,10 @@
-package main
+package bot
 
 import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/datastore"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
@@ -31,18 +32,26 @@ const (
 	PostbackActionDeleteFavorite PostbackAction = "deleteFavorite"
 )
 
-// PostbackData is used in Postback
 type PostbackData interface {
 	PostbackData()
 }
 
-// Postback is used to pustback
+type Query datastore.Query
+
+func (q *Query) PostbackData() {}
+
+type PlaceInfo struct {
+	PlaceID  string `json:"place_id"`
+	PhotoURI string `json:"photo_uri"`
+}
+
+func (p *PlaceInfo) PostbackData() {}
+
 type Postback struct {
 	Action PostbackAction `json:"action"`
 	Data   PostbackData   `json:"data"`
 }
 
-// PostbackJSON converts PostbackData to json string
 func PostbackJSON(action PostbackAction, pbData PostbackData) string {
 	b, _ := json.Marshal(&Postback{
 		Action: action,
@@ -51,7 +60,6 @@ func PostbackJSON(action PostbackAction, pbData PostbackData) string {
 	return string(b)
 }
 
-// UnmarshalJSON override
 func (pb *Postback) UnmarshalJSON(b []byte) error {
 	type Alias Postback
 	a := struct {
@@ -82,28 +90,15 @@ func (pb *Postback) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-// PlaceInfo is is used to postback
-type PlaceInfo struct {
-	PlaceID  string `json:"place_id"`
-	PhotoURI string `json:"photo_uri"`
-}
-
-// PostbackData is interface PostbackData
-func (q *Query) PostbackData() {}
-
-// PostbackData is interface PostbackData
-func (p *PlaceInfo) PostbackData() {}
-
-// LocationSendButton message
+// 位置情報送信ボタン
 func LocationSendButton() *linebot.TemplateMessage {
-	URIAction := linebot.NewURIAction("送信する", "line://nv/location")
-	button := linebot.NewButtonsTemplate("", "", "位置情報を送信してネ", URIAction)
+	uriAction := linebot.NewURIAction("送信する", "line://nv/location")
+	button := linebot.NewButtonsTemplate("", "", "位置情報を送信してネ", uriAction)
 	return linebot.NewTemplateMessage("位置情報送信ボタン", button)
 }
 
-// SearchConfirmWindow message
+// 検索確認ウィンドウ
 func SearchConfirmWindow(q *Query) *linebot.TemplateMessage {
-	// jsonBytes, _ := json.Marshal(q)
 	label := map[string]string{}
 	if len(q.Keywords) == 0 {
 		label["changeKeyword"] = "キーワードで絞り込み"
@@ -115,11 +110,11 @@ func SearchConfirmWindow(q *Query) *linebot.TemplateMessage {
 		linebot.NewPostbackAction(label["changeKeyword"], PostbackJSON(PostbackActionChangeKeyword, q), "", ""),
 		linebot.NewPostbackAction("検索する", PostbackJSON(PostbackActionNearbySearch, q), "", ""),
 	}
-	buttons := linebot.NewButtonsTemplate("", "絞り込みますか？", status(q), actions...)
+	buttons := linebot.NewButtonsTemplate("", "絞り込みますか？", searchStatus(q), actions...)
 	return linebot.NewTemplateMessage("確認ボタン", buttons)
 }
 
-func status(q *Query) string {
+func searchStatus(q *Query) string {
 	var str string
 	str += fmt.Sprintf("距離: %s\n", radiusMap[q.Radius])
 	if len(q.Keywords) > 0 {
@@ -128,7 +123,7 @@ func status(q *Query) string {
 	return str
 }
 
-// RadiusQuickReply message
+// 距離絞り込み用のクイックリプライボタン
 func RadiusQuickReply(q *Query) linebot.SendingMessage {
 	buttons := make([]*linebot.QuickReplyButton, 0)
 	for i := range radiusKey {
@@ -141,23 +136,19 @@ func RadiusQuickReply(q *Query) linebot.SendingMessage {
 	return textMsg.WithQuickReplies(linebot.NewQuickReplyItems(buttons...))
 }
 
-// Text message
-func Text(text string) *linebot.TextMessage {
+func TextMessage(text string) *linebot.TextMessage {
 	return linebot.NewTextMessage(text)
 }
 
-// PlaceBubble is for conversion from Place to a bubble
 type PlaceBubble interface {
 	MarshalBubble() *linebot.BubbleContainer
 }
 
-// NearbyPlace implements PlaceBubble interface
 type NearbyPlace places.Place
 
-// FavoritePlace implements PlaceBubble interface
 type FavoritePlace places.Place
 
-// MarshalBubble is PlaceBubble interface
+// メッセージバブルに変換
 func (p *NearbyPlace) MarshalBubble() *linebot.BubbleContainer {
 	info := PlaceInfo{
 		PlaceID:  p.PlaceID,
@@ -211,7 +202,7 @@ func (p *NearbyPlace) MarshalBubble() *linebot.BubbleContainer {
 	return &bubble
 }
 
-// MarshalBubble is PlaceBubble interface
+// メッセージバブルに変換
 func (p *FavoritePlace) MarshalBubble() *linebot.BubbleContainer {
 	info := PlaceInfo{
 		PlaceID: p.PlaceID,
@@ -264,21 +255,20 @@ func (p *FavoritePlace) MarshalBubble() *linebot.BubbleContainer {
 	return &bubble
 }
 
-// PlacesCarousel is for conversion from Places to a carousel message
 type PlacesCarousel interface {
 	PlaceBubbles(maxBubble int) []PlaceBubble
 	AltText() string
 	Len() int
 }
 
-// Carousel message
-func Carousel(p PlacesCarousel, maxBubble int) *linebot.FlexMessage {
+// カルーセルメッセージ
+func CarouselMessage(p PlacesCarousel, maxBubble int) *linebot.FlexMessage {
 	carousel := MarshalCarousel(p, maxBubble)
 	altText := p.AltText()
 	return linebot.NewFlexMessage(altText, carousel)
 }
 
-// MarshalCarousel returns *linebot.CarouselContainer
+// カルーセルに変換
 func MarshalCarousel(p PlacesCarousel, maxBubble int) *linebot.CarouselContainer {
 	placeBubbles := p.PlaceBubbles(maxBubble)
 	bubbleContainers := make([]*linebot.BubbleContainer, 0)
@@ -293,13 +283,11 @@ func MarshalCarousel(p PlacesCarousel, maxBubble int) *linebot.CarouselContainer
 	return &carousel
 }
 
-// NearbyPlaces is Places
 type NearbyPlaces places.Places
 
-// FavoritePlaces is Places
 type FavoritePlaces places.Places
 
-// PlaceBubbles is PlacesCarousel interface
+// 複数のメッセージバブルに変換
 func (p *NearbyPlaces) PlaceBubbles(maxBubble int) []PlaceBubble {
 	bubbles := make([]PlaceBubble, 0)
 	for i := 0; i < p.Len() && i < maxBubble; i++ {
@@ -309,7 +297,7 @@ func (p *NearbyPlaces) PlaceBubbles(maxBubble int) []PlaceBubble {
 	return bubbles
 }
 
-// PlaceBubbles is PlacesCarousel interface
+// 複数のメッセージバブルに変換
 func (p *FavoritePlaces) PlaceBubbles(maxBubble int) []PlaceBubble {
 	bubbles := make([]PlaceBubble, 0)
 	for i := 0; i < p.Len() && i < maxBubble; i++ {
@@ -319,27 +307,25 @@ func (p *FavoritePlaces) PlaceBubbles(maxBubble int) []PlaceBubble {
 	return bubbles
 }
 
-// AltText is PlacesCarousel interface
+// 代替テキスト
 func (p *NearbyPlaces) AltText() string {
 	return "検索結果"
 }
 
-// AltText is PlacesCarousel interface
+// 代替テキスト
 func (p *FavoritePlaces) AltText() string {
 	return "お気に入りリスト"
 }
 
-// Len is PlacesCarousel interface
 func (p *NearbyPlaces) Len() int {
 	return len(*p)
 }
 
-// Len is PlacesCarousel interface
 func (p *FavoritePlaces) Len() int {
 	return len(*p)
 }
 
-// RatingStars returns star view
+// レートを表す5つ星
 func RatingStars(rating float64) []linebot.FlexComponent {
 	maxRating := 5
 	stars := make([]linebot.FlexComponent, maxRating)
@@ -362,7 +348,7 @@ func RatingStars(rating float64) []linebot.FlexComponent {
 	return stars
 }
 
-// StarIconURI is uri of star icon
+// 星アイコンのURI
 func StarIconURI(gold bool) string {
 	base := "https://scdn.line-apps.com/n/channel_devcenter/img/fx/"
 	if gold {
