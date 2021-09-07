@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"cloud.google.com/go/datastore"
+	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/bot"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/config"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
@@ -21,12 +22,14 @@ func main() {
 	}
 	defer dsClient.Close()
 
-	bot, err := linebot.New(config.LINEChannelSecret, config.LINEChannelToken)
+	lineBot, err := linebot.New(config.LINEChannelSecret, config.LINEChannelToken)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/callback", CallbackHandler(ctx, bot, dsClient))
+	bot := bot.NewBot(lineBot, dsClient, config.GCPPlacesAPIKey)
+
+	http.HandleFunc("/callback", bot.CallbackHandler())
 
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
