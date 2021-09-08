@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/datastore"
 	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
@@ -35,8 +34,6 @@ const (
 type PostbackData interface {
 	PostbackData()
 }
-
-type Query datastore.Query
 
 func (q *Query) PostbackData() {}
 
