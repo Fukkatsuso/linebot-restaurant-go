@@ -7,7 +7,6 @@ import (
 	"log"
 
 	"cloud.google.com/go/datastore"
-	"github.com/Fukkatsuso/linebot-restaurant-go/go-app/places"
 )
 
 // Entity is Datastore Resource
@@ -40,45 +39,8 @@ func Delete(ctx context.Context, client *datastore.Client, entity Entity, name s
 }
 
 // sha256でハッシュ化して64文字の文字列にする
-func hashedString(base string) string {
+func HashedString(base string) string {
 	hashBytes := sha256.Sum256([]byte(base))
 	hashString := hex.EncodeToString(hashBytes[:])
 	return hashString
-}
-
-// Query inplements Entity interface
-type Query struct {
-	Lat      string   `json:"lat" datastore:"lat,noindex"`
-	Lng      string   `json:"lng" datastore:"lng,noindex"`
-	Keywords []string `json:"keywords" datastore:"keywords,noindex"`
-	Radius   string   `json:"radius" datastore:"raduis,noindex"`
-	Page     int      `json:"page" datastore:"page,noindex"`
-}
-
-// NewQuery is NearbySearch's Query
-func NewQuery(lat, lng string) Query {
-	return Query{
-		Lat:      lat,
-		Lng:      lng,
-		Keywords: []string{},
-		Radius:   "500",
-		Page:     0,
-	}
-}
-
-// NameKey returns Query's Datastore-Key
-func (query *Query) NameKey(name string, parent *datastore.Key) *datastore.Key {
-	name = hashedString(name)
-	return datastore.NameKey("Query", name, parent)
-}
-
-// Favorite inplements Entity interface
-type Favorite struct {
-	List []places.Place `datastore:"list,noindex"`
-}
-
-// NameKey returns Favorite's Datastore-Key
-func (favorite *Favorite) NameKey(name string, parent *datastore.Key) *datastore.Key {
-	name = hashedString(name)
-	return datastore.NameKey("Favorite", name, parent)
 }

@@ -80,7 +80,7 @@ func (bot *Bot) ReplyMessage(ctx context.Context, event *linebot.Event, messages
 // お気に入りを表示
 func (bot *Bot) ShowFavorite(ctx context.Context, event *linebot.Event) {
 	userID := event.Source.UserID
-	f := mystore.Favorite{}
+	f := Favorite{}
 	err := mystore.Get(ctx, bot.DatastoreClient, &f, userID, nil)
 	if err == datastore.ErrNoSuchEntity || len(f.List) == 0 {
 		bot.ReplyMessage(ctx, event, TextMessage("お気に入りがありません"))
@@ -93,7 +93,7 @@ func (bot *Bot) ShowFavorite(ctx context.Context, event *linebot.Event) {
 // 検索クエリにキーワードを追加
 func (bot *Bot) AddKeyword(ctx context.Context, event *linebot.Event) {
 	userID := event.Source.UserID
-	q := mystore.Query{}
+	q := Query{}
 	if err := mystore.Get(ctx, bot.DatastoreClient, &q, userID, nil); err != nil {
 		bot.ReplyMessage(ctx, event, TextMessage("位置情報を送信して「キーワードで絞り込み」を選択してください"))
 		return
@@ -150,7 +150,7 @@ func (bot *Bot) HandlePostback(ctx context.Context, event *linebot.Event) {
 
 func (bot *Bot) ChangeRadius(ctx context.Context, event *linebot.Event, q *Query) {
 	userID := event.Source.UserID
-	if err := mystore.Save(ctx, bot.DatastoreClient, (*mystore.Query)(q), userID, nil); err != nil {
+	if err := mystore.Save(ctx, bot.DatastoreClient, q, userID, nil); err != nil {
 		return
 	}
 	bot.ReplyMessage(ctx, event, RadiusQuickReply(q))
@@ -158,7 +158,7 @@ func (bot *Bot) ChangeRadius(ctx context.Context, event *linebot.Event, q *Query
 func (bot *Bot) ChangeKeyword(ctx context.Context, event *linebot.Event, q *Query) {
 	userID := event.Source.UserID
 	q.Keywords = []string{}
-	if err := mystore.Save(ctx, bot.DatastoreClient, (*mystore.Query)(q), userID, nil); err != nil {
+	if err := mystore.Save(ctx, bot.DatastoreClient, q, userID, nil); err != nil {
 		return
 	}
 	bot.ReplyMessage(ctx, event, TextMessage("キーワードを入力してネ\n送ったメッセージの数だけキーワードが追加されます!"))
@@ -194,7 +194,7 @@ func (bot *Bot) AddFavorite(ctx context.Context, event *linebot.Event, info *Pla
 	userID := event.Source.UserID
 
 	// Datastoreからリストを取得してお気に入り追加
-	f := mystore.Favorite{}
+	f := Favorite{}
 	err = mystore.Get(ctx, bot.DatastoreClient, &f, userID, nil)
 	if err == datastore.ErrNoSuchEntity {
 		// エンティティがなければ作成
@@ -231,7 +231,7 @@ func (bot *Bot) AddFavorite(ctx context.Context, event *linebot.Event, info *Pla
 func (bot *Bot) DeleteFavorite(ctx context.Context, event *linebot.Event, info *PlaceInfo) {
 	userID := event.Source.UserID
 	// お気に入りリストを取得
-	f := mystore.Favorite{}
+	f := Favorite{}
 	err := mystore.Get(ctx, bot.DatastoreClient, &f, userID, nil)
 	if err != nil {
 		bot.ReplyMessage(ctx, event, TextMessage("お気に入り削除に失敗しました..."))
