@@ -1,4 +1,5 @@
 .DS_Store
+.vscode/
 REFERENCES.md
 *.env
 /go-app/.gcloudignore
