@@ -63,6 +63,8 @@ gcloud iam service-accounts keys create ~/${PROJECT_ID}/${SA_NAME}/key.json \
 ```sh
 gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
   --role="roles/run.admin"
+gcloud projects add-iam-policy-binding ${PROJECT_ID} --member="serviceAccount:${IAM_ACCOUNT}" \
+  --role="roles/artifactregistry.writer"
 
 export PROJECT_NUMBER=XXXXXXXXXXXX
 gcloud iam service-accounts add-iam-policy-binding ${PROJECT_NUMBER}-compute@developer.gserviceaccount.com --member="serviceAccount:${IAM_ACCOUNT}" \
